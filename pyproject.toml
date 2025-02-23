@@ -3,7 +3,7 @@ name = "privacy-enabled-agents"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.115.6",
     "langchain-openai>=0.2.14",
@@ -11,17 +11,18 @@ dependencies = [
     "langgraph>=0.2.60",
     "python-dotenv>=1.0.1",
     "langfuse>=2.57.4",
+    "gliner[gpu]>=0.2.14",
+    "truststore>=0.10.0",
+    "pydantic>=2.10.4",
 ]
 
 [dependency-groups]
-dev = [
-    "jupyter>=1.1.1",
-    "ruff>=0.8.5",
-]
+dev = ["jupyter>=1.1.1", "ruff>=0.8.5"]
 
 [[tool.uv.index]]
 name = "pypi"
 url = "https://pypi.org/simple"
+default = true
 
 [[tool.uv.index]]
 name = "pytorch"
@@ -29,7 +30,9 @@ url = "https://download.pytorch.org/whl/cu124"
 explicit = true
 
 [tool.uv.sources]
-torch = { index = "pytorch" }
+torch = [
+    { index = "pytorch-cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
