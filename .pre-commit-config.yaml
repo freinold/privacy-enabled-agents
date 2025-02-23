@@ -27,6 +27,7 @@ repos:
   - id: pretty-format-json
     # Checks that all your JSON files are pretty. "Pretty" here means that keys are sorted and indented.
     args: [ --autofix, --no-ensure-ascii ]
+    exclude: \.ipynb$
 - repo: https://github.com/kynan/nbstripout
   rev: 0.8.1
   hooks:
