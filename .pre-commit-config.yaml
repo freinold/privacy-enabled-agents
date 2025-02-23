@@ -30,7 +30,13 @@ repos:
 - repo: https://github.com/kynan/nbstripout
   rev: 0.8.1
   hooks:
-    - id: nbstripout
+  - id: nbstripout
+- repo: https://github.com/gitleaks/gitleaks
+  rev: v8.24.0
+  hooks:
+  - id: gitleaks
+    language_version: 1.23.6
+
 # # Currently excluded because we need no requirements.txt
 #
 # - repo: https://github.com/astral-sh/uv-pre-commit
