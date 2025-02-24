@@ -1912,6 +1912,15 @@ wheels = [
 ]
 
 [[package]]
+name = "phonenumbers"
+version = "8.13.55"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6e/23/b4c886487ca212ca87768433a43e2b3099c1c2fa5d9e21d2fbce187cc3c2/phonenumbers-8.13.55.tar.gz", hash = "sha256:57c989dda3eabab1b5a9e3d24438a39ebd032fa0172bf68bfd90ab70b3d5e08b", size = 2296624 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/dc/a7f0a9d5ad8b98bc5406deb00207b268d6d2edd215c21642e8f2ecc6f0ce/phonenumbers-8.13.55-py2.py3-none-any.whl", hash = "sha256:25feaf46135f0fb1e61b69513dc97c477285ba98a69204bf5a8cf241a844a718", size = 2582306 },
+]
+
+[[package]]
 name = "platformdirs"
 version = "4.3.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1948,7 +1957,9 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "langfuse" },
     { name = "langgraph" },
+    { name = "phonenumbers" },
     { name = "pydantic" },
+    { name = "pydantic-extra-types" },
     { name = "python-dotenv" },
     { name = "truststore" },
 ]
@@ -1969,7 +1980,9 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=0.2.14" },
     { name = "langfuse", specifier = ">=2.57.4" },
     { name = "langgraph", specifier = ">=0.2.60" },
+    { name = "phonenumbers", specifier = ">=8.13.55" },
     { name = "pydantic", specifier = ">=2.10.4" },
+    { name = "pydantic-extra-types", specifier = ">=2.10.2" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "truststore", specifier = ">=0.10.0" },
 ]
@@ -2166,6 +2179,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/99/bddde3ddde76c03b65dfd5a66ab436c4e58ffc42927d4ff1198ffbf96f5f/pydantic_core-2.27.2-cp313-cp313-win32.whl", hash = "sha256:1ebaf1d0481914d004a573394f4be3a7616334be70261007e47c2a6fe7e50130", size = 1834387 },
     { url = "https://files.pythonhosted.org/packages/71/47/82b5e846e01b26ac6f1893d3c5f9f3a2eb6ba79be26eef0b759b4fe72946/pydantic_core-2.27.2-cp313-cp313-win_amd64.whl", hash = "sha256:953101387ecf2f5652883208769a79e48db18c6df442568a0b5ccd8c2723abee", size = 1990453 },
     { url = "https://files.pythonhosted.org/packages/51/b2/b2b50d5ecf21acf870190ae5d093602d95f66c9c31f9d5de6062eb329ad1/pydantic_core-2.27.2-cp313-cp313-win_arm64.whl", hash = "sha256:ac4dbfd1691affb8f48c2c13241a2e3b60ff23247cbcf981759c768b6633cf8b", size = 1885186 },
+]
+
+[[package]]
+name = "pydantic-extra-types"
+version = "2.10.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/23/ed/69f3f3de12c02ebd58b2f66ffb73d0f5a1b10b322227897499753cebe818/pydantic_extra_types-2.10.2.tar.gz", hash = "sha256:934d59ab7a02ff788759c3a97bc896f5cfdc91e62e4f88ea4669067a73f14b98", size = 86893 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/da/86bc9addde8a24348ac15f8f7dcb853f78e9573c7667800dd9bc60558678/pydantic_extra_types-2.10.2-py3-none-any.whl", hash = "sha256:9eccd55a2b7935cea25f0a67f6ff763d55d80c41d86b887d88915412ccf5b7fa", size = 35473 },
 ]
 
 [[package]]
