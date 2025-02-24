@@ -32,11 +32,11 @@ langfuse_handler = CallbackHandler(trace_name="Basic Agent")
 chat_model = ChatOpenAI(model="gpt-4o")
 
 
-def chatbot(state: State):
+def _chatbot(state: State):
     return {"messages": [chat_model.invoke(state["messages"])]}
 
 
-graph_builder.add_node("chatbot", chatbot)
+graph_builder.add_node("chatbot", _chatbot)
 graph_builder.add_edge(START, "chatbot")
 graph_builder.add_edge("chatbot", END)
 graph = graph_builder.compile().with_config({"callbacks": [langfuse_handler]})
@@ -47,16 +47,17 @@ with open("basic_agent.png", "wb") as f:
     f.write(img)
 
 
-def stream_graph_updates(user_input: str):
+def _stream_graph_updates(user_input: str):
     for event in graph.stream({"messages": [HumanMessage(content=user_input)]}):
         for value in event.values():
             print("Assistant:", value["messages"][-1].content)
 
 
-while True:
-    user_input = input("User: ")
-    if user_input.lower() in ["quit", "exit", "q"]:
-        print("Goodbye!")
-        break
+def run_agent() -> None:
+    while True:
+        user_input = input("User: ")
+        if user_input.lower() in ["quit", "exit", "q"]:
+            print("Goodbye!")
+            break
 
-    stream_graph_updates(user_input)
+        _stream_graph_updates(user_input)

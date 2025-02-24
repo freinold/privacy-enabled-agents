@@ -14,6 +14,7 @@ from langchain_community.tools import SearxSearchResults
 from langchain_community.utilities import SearxSearchWrapper
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.human import HumanMessage
+from langchain_core.messages.system import SystemMessage
 from langchain_core.messages.tool import ToolMessage
 from langchain_openai import ChatOpenAI
 from langfuse.callback import CallbackHandler
@@ -27,7 +28,15 @@ class State(TypedDict):
     # Messages have the type "list". The `add_messages` function
     # in the annotation defines how this state key should be updated
     # (in this case, it appends messages to the list, rather than overwriting them)
-    messages: Annotated[list, add_messages]
+    messages: Annotated[list, add_messages] = [
+        SystemMessage(
+            """
+            Du bist ein Websearch Agent.
+            Du kannst zur Beantwortung von Fragen im Web auf bestimmten Seiten suchen, indem du Tools benutzt.
+            Wenn du zu einer Frage oder Aufgabe keine Informationen hast, gib einfach "Ich weiß es nicht" an.
+            """
+        )
+    ]
 
 
 # Create tools
@@ -49,15 +58,23 @@ tourismus_tool = SearxSearchResults(
 )
 
 
-class DateTool(BaseTool):
-    name: str = "date-tool"
+class CurrentDate(BaseTool):
+    name: str = "current_date"
     description: str = "A tool that returns the current date and time in ISO format."
 
     def _run(self) -> str:
         return datetime.now().isoformat()
 
 
-date_tool = DateTool()
+class BookTrip(BaseTool):
+    name: str = "book_trip"
+    description: str = "A tool that books a trip to Munich."
+
+    def _run(self) -> str:
+        return "Trip booked to Munich!"
+
+
+date_tool = CurrentDate()
 
 tools = [
     muenchen_tool,
@@ -105,20 +122,22 @@ with open("img/websearch_agent.png", "wb") as f:
 def stream_graph_updates(user_input: str):
     for event in graph.stream({"messages": [HumanMessage(content=user_input)]}):
         for value in event.values():
-            last_message = value["messages"][-1]
-            if isinstance(last_message, AIMessage):
-                print(f"Agent: {last_message.content}")
-                if last_message.tool_calls:
-                    for tool_call in last_message.tool_calls:
-                        print(f"Agent: {tool_call['name']} tool called.")
-            elif isinstance(last_message, ToolMessage):
-                print(f"Tool: {last_message.content}")
+            for message in value["messages"]:
+                if isinstance(message, AIMessage):
+                    if message.content:
+                        print(f"Agent: {message.content}")
+                    if message.tool_calls:
+                        for tool_call in message.tool_calls:
+                            print(f"Agent: {tool_call['name']} tool called.")
+                elif isinstance(message, ToolMessage):
+                    print(f"Tool: {message.content}")
 
 
-while True:
-    user_input = input("User: ")
-    if user_input.lower() in ["quit", "exit", "q"]:
-        print("Goodbye!")
-        break
+def run_agent() -> None:
+    while True:
+        user_input = input("User: ")
+        if user_input.lower() in ["quit", "exit", "q"]:
+            print("Goodbye!")
+            break
 
-    stream_graph_updates(user_input)
+        stream_graph_updates(user_input)
