@@ -61,3 +61,7 @@ def run_agent() -> None:
             break
 
         _stream_graph_updates(user_input)
+
+
+if __name__ == "__main__":
+    run_agent()

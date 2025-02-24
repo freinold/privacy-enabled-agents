@@ -14,7 +14,6 @@ from langchain_community.tools import SearxSearchResults
 from langchain_community.utilities import SearxSearchWrapper
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.human import HumanMessage
-from langchain_core.messages.system import SystemMessage
 from langchain_core.messages.tool import ToolMessage
 from langchain_openai import ChatOpenAI
 from langfuse.callback import CallbackHandler
@@ -23,38 +22,24 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from typing_extensions import TypedDict
 
+# TODO: somehow the bot doesnt reference previous messages
+
 
 class State(TypedDict):
     # Messages have the type "list". The `add_messages` function
     # in the annotation defines how this state key should be updated
     # (in this case, it appends messages to the list, rather than overwriting them)
-    messages: Annotated[list, add_messages] = [
-        SystemMessage(
-            """
-            Du bist ein Websearch Agent.
-            Du kannst zur Beantwortung von Fragen im Web auf bestimmten Seiten suchen, indem du Tools benutzt.
-            Wenn du zu einer Frage oder Aufgabe keine Informationen hast, gib einfach "Ich weiß es nicht" an.
-            """
-        )
-    ]
+    messages: Annotated[list, add_messages]
 
 
 # Create tools
-search = SearxSearchWrapper()
-muenchen_tool = SearxSearchResults(
-    name="muenchen_de-search",
-    num_results=3,
-    description="Search for general Munich related information on muenchen.de",
-    wrapper=search,
-    kwargs={"engines": ["google", "bing"], "query_suffix": "site:muenchen.de"},
-)
+search = SearxSearchWrapper(engines=["bing"])
 
-tourismus_tool = SearxSearchResults(
-    name="muenchen_travel-search",
-    num_results=3,
-    description="Search for Munich tourism information on muenchen.travel",
+websearch_tool = SearxSearchResults(
+    name="websearch",
+    num_results=5,
+    description="Search for general information on the web",
     wrapper=search,
-    kwargs={"engines": ["google", "bing"], "query_suffix": "site:muenchen.travel"},
 )
 
 
@@ -66,25 +51,18 @@ class CurrentDate(BaseTool):
         return datetime.now().isoformat()
 
 
-class BookTrip(BaseTool):
-    name: str = "book_trip"
-    description: str = "A tool that books a trip to Munich."
-
-    def _run(self) -> str:
-        return "Trip booked to Munich!"
-
-
 date_tool = CurrentDate()
 
 tools = [
-    muenchen_tool,
-    tourismus_tool,
+    websearch_tool,
     date_tool,
 ]
 
 # Create chat model and bind tools
 chat_model = ChatOpenAI(model="gpt-4o")
-chat_model_with_tools = chat_model.bind_tools(tools)
+chat_model_with_tools = chat_model.bind_tools(
+    tools, parallel_tool_calls=False
+)  # Disable parallel tool calls to ensure that the tools are called in the order they are defined
 
 # Create a graph builder
 graph_builder = StateGraph(State)
@@ -128,7 +106,7 @@ def stream_graph_updates(user_input: str):
                         print(f"Agent: {message.content}")
                     if message.tool_calls:
                         for tool_call in message.tool_calls:
-                            print(f"Agent: {tool_call['name']} tool called.")
+                            print(f"Agent called tool {tool_call['name']} with args {tool_call['args']}.")
                 elif isinstance(message, ToolMessage):
                     print(f"Tool: {message.content}")
 
@@ -141,3 +119,7 @@ def run_agent() -> None:
             break
 
         stream_graph_updates(user_input)
+
+
+if __name__ == "__main__":
+    run_agent()
