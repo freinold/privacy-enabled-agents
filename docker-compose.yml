@@ -9,7 +9,7 @@ services:
     volumes:
       - valkey-data:/data
     command: ["--appendonly", "yes"] # Enable data persistence
-    restart: unless-stopped
+    restart: on-failure
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
