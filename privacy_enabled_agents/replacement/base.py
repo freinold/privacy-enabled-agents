@@ -14,7 +14,7 @@ class BaseReplacer(ABC):
     """
 
     storage: BaseStorage
-    _supported_entities: list[str]
+    _supported_entities: list[str]  # Can include "*" to indicate support for all entities
 
     def __init__(self, storage: BaseStorage) -> None:
         self.storage = storage
@@ -22,6 +22,7 @@ class BaseReplacer(ABC):
     def get_supported_entities(self) -> list[str]:
         """
         Returns the list of entities supported by this replacer.
+        If the list contains "*", the replacer supports all entities.
 
         Returns:
             list[str]: The list of supported entities.
@@ -31,6 +32,7 @@ class BaseReplacer(ABC):
     def validate_entities(self, entities: list[Entity]) -> bool:
         """
         Validates the entities to be replaced.
+        If _supported_entities contains "*", all entities are considered valid.
 
         Args:
             entities (list[Entity]): The entities to be validated.
@@ -38,6 +40,8 @@ class BaseReplacer(ABC):
         Returns:
             bool: True if the entities are supported, False otherwise.
         """
+        if "*" in self._supported_entities:
+            return True
         return all(entity.label in self._supported_entities for entity in entities)
 
     @abstractmethod
