@@ -43,7 +43,28 @@ class BaseReplacer(ABC):
             return True
         return all(entity.label in self._supported_entities for entity in entities)
 
-    @abstractmethod
+    def restore(self, text: str, context_id: UUID) -> str:
+        """
+        Restores the replaced entities in the text.
+
+        Args:
+            text (str): The text to be processed.
+            context_id (UUID): The context ID for the restoration process.
+
+        Returns:
+            str: The text with the entities restored.
+        """
+        # Get all replacements for the context_id
+        replacements = self.storage.list_replacements(context_id)
+
+        # Restore the text by replacing placeholders with original text
+        for replacement in replacements:
+            if replacement in text:
+                original_text = self.storage.get_text(replacement, context_id)
+                text = text.replace(replacement, original_text)
+
+        return text
+
     def replace(self, text: str, entities: list[Entity], context_id: UUID) -> str:
         """
         Replaces the given entities in the text.
@@ -56,18 +77,33 @@ class BaseReplacer(ABC):
         Returns:
             str: The text with the entities replaced.
         """
-        pass
+        text_offset = 0
+
+        for entity in entities:
+            # Get the replacement for the entity
+            replacement = self.storage.get_replacement(entity.text)
+
+            # If the replacement is not found, create a new one
+            if replacement is None:
+                # Create a new replacement and store it
+                replacement = self.create_replacement(entity)
+                self.storage.put(entity.text, entity.label, replacement, context_id)
+
+            # Replace the entity in the text
+            text = text[: entity.start + text_offset] + replacement + text[entity.end + text_offset :]
+            text_offset += len(replacement) - len(entity.text)
+
+        return text
 
     @abstractmethod
-    def restore(self, text: str, context_id: UUID) -> str:
+    def create_replacement(self, entity: Entity) -> str:
         """
-        Restores the replaced entities in the text.
+        Creates a replacement for the given entity.
 
         Args:
-            text (str): The text to be processed.
-            context_id (UUID): The context ID for the restoration process.
+            entity (Entity): The entity to be replaced.
 
         Returns:
-            str: The text with the entities restored.
+            str: The replacement for the entity.
         """
         pass
