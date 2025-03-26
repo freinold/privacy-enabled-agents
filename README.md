@@ -112,3 +112,12 @@ uv run pre-commit run --all-files
 ```bash
 uv run pre-commit autoupdate
 ```
+
+### GitHub Actions
+
+This project uses GitHub Actions to automate linting and formatting using Ruff. The workflow runs on push to the main branch and on pull requests. It performs the following actions:
+
+- Runs Ruff linter with `--fix` option
+- Runs Ruff formatter
+
+You can see the workflow details in the `.github/workflows/ruff.yml` file.
