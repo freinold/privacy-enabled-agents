@@ -7,16 +7,38 @@ from privacy_enabled_agents.storage.base import BaseStorage
 
 
 class BaseReplacer(ABC):
-    storage: BaseStorage
-
     """
     Abstract base class for implementing various replacement techniques on different categories of data.
 
     Provides a common interface for all replacement techniques.
     """
 
+    storage: BaseStorage
+    _supported_entities: list[str]
+
     def __init__(self, storage: BaseStorage) -> None:
         self.storage = storage
+
+    def get_supported_entities(self) -> list[str]:
+        """
+        Returns the list of entities supported by this replacer.
+
+        Returns:
+            list[str]: The list of supported entities.
+        """
+        return self._supported_entities
+
+    def validate_entities(self, entities: list[Entity]) -> bool:
+        """
+        Validates the entities to be replaced.
+
+        Args:
+            entities (list[Entity]): The entities to be validated.
+
+        Returns:
+            bool: True if the entities are supported, False otherwise.
+        """
+        return all(entity.label in self._supported_entities for entity in entities)
 
     @abstractmethod
     def replace(self, text: str, entities: list[Entity], context_id: Optional[UUID] = None) -> str:
