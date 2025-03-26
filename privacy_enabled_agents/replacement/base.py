@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 from uuid import UUID
 
 from privacy_enabled_agents.base import Entity
@@ -45,14 +44,14 @@ class BaseReplacer(ABC):
         return all(entity.label in self._supported_entities for entity in entities)
 
     @abstractmethod
-    def replace(self, text: str, entities: list[Entity], context_id: Optional[UUID] = None) -> str:
+    def replace(self, text: str, entities: list[Entity], context_id: UUID) -> str:
         """
         Replaces the given entities in the text.
 
         Args:
             text (str): The text to be processed.
             entities (list[Entity]): The entities to be replaced.
-            context_id (Optional[UUID]): The context ID for the replacement process, if not provided, no restoration will be possible.
+            context_id (UUID): The context ID for the replacement process.
 
         Returns:
             str: The text with the entities replaced.
