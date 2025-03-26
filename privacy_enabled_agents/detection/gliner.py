@@ -13,12 +13,11 @@ class GlinerPIIDetector(BaseDetector):
     Link: https://huggingface.co/urchade/gliner_multi_pii-v1
     """
 
-    model: str = "urchade/gliner_multi_pii-v1"
-    supported_entities: list[str] = ["person", "email", "phone number", "adress", "iban", "credit card number", "location"]
+    _model: str = "urchade/gliner_multi_pii-v1"
+    _supported_entities: list[str] = ["person", "email", "phone number", "adress", "iban", "credit card number", "location"]
 
     def __init__(self) -> None:
-        super().__init__(supported_entities=self.supported_entities)
-        self.gliner = GLiNER.from_pretrained(self.model)
+        self._gliner = GLiNER.from_pretrained(self._model)
 
     def detect(self, texts: Union[str, list[str]], threshold: float = 0.5) -> list[DetectionResult]:
         """
@@ -36,7 +35,7 @@ class GlinerPIIDetector(BaseDetector):
         if isinstance(texts, str):
             texts = [texts]
 
-        predictions_per_text = self.gliner.batch_predict_entities(texts=texts, labels=self.supported_entities, threshold=threshold)
+        predictions_per_text = self._gliner.batch_predict_entities(texts=texts, labels=self._supported_entities, threshold=threshold)
 
         detection_results: list[DetectionResult] = []
 
@@ -54,8 +53,8 @@ class GlinerMedicalDetector(BaseDetector):
     Link: https://huggingface.co/urchade/gliner_large_bio-v0.1
     """
 
-    model = "urchade/gliner_large_bio-v0.1"
-    supported_entities = [
+    _model: str = "urchade/gliner_large_bio-v0.1"
+    _supported_entities: list[str] = [
         "Disease",
         "Illness",
         "Anatomy",
@@ -71,8 +70,8 @@ class GlinerMedicalDetector(BaseDetector):
     ]
 
     def __init__(self) -> None:
-        super().__init__(supported_entities=self.supported_entities)
-        self.gliner = GLiNER.from_pretrained(self.model)
+        super().__init__(supported_entities=self._supported_entities)
+        self._gliner = GLiNER.from_pretrained(self._model)
 
     def detect(self, texts: Union[str, list[str]], threshold: float = 0.3) -> list[DetectionResult]:
         """
@@ -90,7 +89,7 @@ class GlinerMedicalDetector(BaseDetector):
         if isinstance(texts, str):
             texts = [texts]
 
-        predictions_per_text = self.gliner.batch_predict_entities(texts=texts, labels=self.supported_entities, threshold=threshold)
+        predictions_per_text = self._gliner.batch_predict_entities(texts=texts, labels=self._supported_entities, threshold=threshold)
 
         detection_results: list[DetectionResult] = []
 

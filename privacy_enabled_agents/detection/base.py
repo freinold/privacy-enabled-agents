@@ -19,8 +19,20 @@ class BaseDetector(ABC):
     Provides a common interface for all detection techniques.
     """
 
-    def __init__(self, supported_entities: list[str]) -> None:
-        self.supported_entities = supported_entities
+    _supported_entities: list[str]
+
+    def __init__(self) -> None:
+        pass
+
+    @abstractmethod
+    def get_supported_entities(self) -> list[str]:
+        """
+        Returns the list of entities supported by this detector.
+
+        Returns:
+            list[str]: The list of supported entities.
+        """
+        return self._supported_entities
 
     @abstractmethod
     def detect(self, texts: Union[str, list[str]], threshold: Optional[float] = None) -> list[DetectionResult]:
