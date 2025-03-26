@@ -22,6 +22,20 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
+    def inc_label_counter(self, label: str, context_id: UUID) -> int:
+        """
+        Increments the counter for the given label.
+
+        Args:
+            label (str): The label to increment the counter for.
+            context_id (UUID): UUID that identifies the specific context (e.g. a conversation).
+
+        Returns:
+            int: The new counter value.
+        """
+        pass
+
+    @abstractmethod
     def get_text(self, replacement: str, context_id: UUID) -> Optional[tuple[str, str]]:
         """
         Retrieves the original text and label of the given replacement.
