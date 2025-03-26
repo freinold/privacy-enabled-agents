@@ -14,10 +14,11 @@ class ValkeyStorage(BaseStorage):
     This implementation uses hash sets in Valkey to store replacements with their original
     text and label for each context. Keys are structured as follows:
 
-    - context:{context_id}:{replacement} -> JSON string containing {"text": original_text, "label": original_label}
-    - context:{context_id}:replacements -> Set of all replacements for this context
-    - context:{context_id}:text_to_replacement -> Hash map mapping original_text to replacement
-    - contexts -> Set of all context IDs
+    - ctx:{context_id}:reps -> Set of all replacements for this context
+    - ctx:{context_id}:rep:{replacement} -> JSON string containing {"text": original_text, "label": original_label}
+    - ctx:{context_id}:tex2rep -> Hash map mapping original_text to replacement
+    - ctx:{context_id}:lc:{label} -> Label counter for this label
+    - ctxs -> Set of all context IDs
     """
 
     client: Valkey
@@ -34,21 +35,21 @@ class ValkeyStorage(BaseStorage):
         """
         self.client = Valkey(host=host, port=port, db=db, **kwargs)
 
-    def _context_key(self, context_id: UUID) -> str:
-        """Generate key for a specific context"""
-        return f"context:{str(context_id)}"
-
     def _replacement_key(self, context_id: UUID, replacement: str) -> str:
         """Generate key for a specific replacement in a context"""
-        return f"context:{str(context_id)}:{replacement}"
+        return f"ctx:{context_id}:rep:{replacement}"
 
     def _replacements_set_key(self, context_id: UUID) -> str:
         """Generate key for the set of replacements in a context"""
-        return f"context:{str(context_id)}:replacements"
+        return f"ctx:{context_id}:reps"
 
     def _text_to_replacement_key(self, context_id: UUID) -> str:
         """Generate key for the hash mapping text to replacement in a context"""
-        return f"context:{str(context_id)}:text_to_replacement"
+        return f"ctx:{context_id}:tex2rep"
+
+    def _label_counter_key(self, context_id: UUID, label: str) -> str:
+        """Generate key for the label counter in a context"""
+        return f"ctx:{context_id}:lc:{label}"
 
     async def put(self, text: str, label: str, replacement: str, context_id: UUID) -> None:
         # Create a JSON string with the original text and label
@@ -63,9 +64,14 @@ class ValkeyStorage(BaseStorage):
             # Add to reverse lookup index: map text to replacement
             pipe.hset(self._text_to_replacement_key(context_id), text, replacement)
             # Add the context_id to the set of all contexts
-            pipe.sadd("contexts", str(context_id))
+            pipe.sadd("ctxs", str(context_id))
             # Execute all commands
             await pipe.execute()
+
+    async def inc_label_counter(self, label: str, context_id: UUID) -> int:
+        # Increment the label counter and get the new value
+        new_value = await self.client.incr(self._label_counter_key(context_id, label))
+        return new_value
 
     async def get_text(self, replacement: str, context_id: UUID) -> tuple[str, str]:
         data = await self.client.get(self._replacement_key(context_id, replacement))
@@ -120,12 +126,12 @@ class ValkeyStorage(BaseStorage):
                     # Delete the text-to-replacement mapping
                     pipe.delete(self._text_to_replacement_key(context_id))
                     # Remove this context from the set of all contexts
-                    pipe.srem("contexts", str(context_id))
+                    pipe.srem("ctxs", str(context_id))
                     # Execute all commands
                     await pipe.execute()
         else:
             # Clear all data - get all contexts first
-            contexts_data = await self.client.smembers("contexts")
+            contexts_data = await self.client.smembers("ctxs")
             if contexts_data:
                 contexts = [UUID(c.decode("utf-8")) for c in contexts_data]
 
@@ -140,7 +146,7 @@ class ValkeyStorage(BaseStorage):
                         pipe.delete(self._text_to_replacement_key(ctx))
 
                     # Delete the set of all contexts
-                    pipe.delete("contexts")
+                    pipe.delete("ctxs")
                     # Execute all commands
                     await pipe.execute()
 
@@ -175,7 +181,7 @@ class ValkeyStorage(BaseStorage):
         stats = {}
 
         # Get count of contexts
-        contexts_data = await self.client.smembers("contexts")
+        contexts_data = await self.client.smembers("ctxs")
         num_contexts = len(contexts_data) if contexts_data else 0
         stats["contexts"] = num_contexts
 
