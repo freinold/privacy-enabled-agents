@@ -16,6 +16,7 @@ class ValkeyStorage(BaseStorage):
 
     - context:{context_id}:{replacement} -> JSON string containing {"text": original_text, "label": original_label}
     - context:{context_id}:replacements -> Set of all replacements for this context
+    - context:{context_id}:text_to_replacement -> Hash map mapping original_text to replacement
     - contexts -> Set of all context IDs
     """
 
@@ -45,10 +46,11 @@ class ValkeyStorage(BaseStorage):
         """Generate key for the set of replacements in a context"""
         return f"context:{str(context_id)}:replacements"
 
+    def _text_to_replacement_key(self, context_id: UUID) -> str:
+        """Generate key for the hash mapping text to replacement in a context"""
+        return f"context:{str(context_id)}:text_to_replacement"
+
     async def put(self, text: str, label: str, replacement: str, context_id: UUID) -> None:
-        """
-        Stores the given triple of text, label, and replacement.
-        """
         # Create a JSON string with the original text and label
         data = json.dumps({"text": text, "label": label})
 
@@ -58,15 +60,14 @@ class ValkeyStorage(BaseStorage):
             pipe.set(self._replacement_key(context_id, replacement), data)
             # Add the replacement to the set of replacements for this context
             pipe.sadd(self._replacements_set_key(context_id), replacement)
+            # Add to reverse lookup index: map text to replacement
+            pipe.hset(self._text_to_replacement_key(context_id), text, replacement)
             # Add the context_id to the set of all contexts
             pipe.sadd("contexts", str(context_id))
             # Execute all commands
             await pipe.execute()
 
-    async def get(self, replacement: str, context_id: UUID) -> tuple[str, str]:
-        """
-        Retrieves the original text and label of the given replacement.
-        """
+    async def get_text(self, replacement: str, context_id: UUID) -> tuple[str, str]:
         data = await self.client.get(self._replacement_key(context_id, replacement))
         if not data:
             raise ValueError(f"Replacement '{replacement}' not found in context {context_id}")
@@ -75,13 +76,21 @@ class ValkeyStorage(BaseStorage):
         parsed_data = json.loads(data)
         return parsed_data["text"], parsed_data["label"]
 
+    async def get_replacement(self, text: str, context_id: UUID) -> Optional[str]:
+        # Use the reverse lookup index to directly get the replacement
+        replacement = await self.client.hget(self._text_to_replacement_key(context_id), text)
+        if replacement:
+            return replacement.decode("utf-8")
+        return None
+
     async def delete(self, replacement: str, context_id: UUID) -> None:
-        """
-        Deletes the given replacement from storage.
-        """
         # Check if the replacement exists
         if not await self.exists(replacement, context_id):
             raise ValueError(f"Replacement '{replacement}' not found in context {context_id}")
+
+        # Get the original text to remove from the reverse index
+        data = await self.client.get(self._replacement_key(context_id, replacement))
+        original_text = json.loads(data)["text"] if data else None
 
         # Use a pipeline for atomic operations
         async with self.client.pipeline() as pipe:
@@ -89,13 +98,13 @@ class ValkeyStorage(BaseStorage):
             pipe.delete(self._replacement_key(context_id, replacement))
             # Remove the replacement from the set of replacements for this context
             pipe.srem(self._replacements_set_key(context_id), replacement)
+            # Remove from the reverse lookup index if we found the original text
+            if original_text:
+                pipe.hdel(self._text_to_replacement_key(context_id), original_text)
             # Execute all commands
             await pipe.execute()
 
     async def clear(self, context_id: UUID = None) -> None:
-        """
-        Clears the whole storage or just a specific context.
-        """
         if context_id is not None:
             # Clear only the specified context
             replacements = await self.list_replacements(context_id)
@@ -108,6 +117,8 @@ class ValkeyStorage(BaseStorage):
 
                     # Delete the set of replacements for this context
                     pipe.delete(self._replacements_set_key(context_id))
+                    # Delete the text-to-replacement mapping
+                    pipe.delete(self._text_to_replacement_key(context_id))
                     # Remove this context from the set of all contexts
                     pipe.srem("contexts", str(context_id))
                     # Execute all commands
@@ -126,6 +137,7 @@ class ValkeyStorage(BaseStorage):
                         for replacement in replacements:
                             pipe.delete(self._replacement_key(ctx, replacement))
                         pipe.delete(self._replacements_set_key(ctx))
+                        pipe.delete(self._text_to_replacement_key(ctx))
 
                     # Delete the set of all contexts
                     pipe.delete("contexts")
@@ -133,23 +145,14 @@ class ValkeyStorage(BaseStorage):
                     await pipe.execute()
 
     async def exists(self, replacement: str, context_id: UUID) -> bool:
-        """
-        Checks if a replacement exists in the storage.
-        """
         return bool(await self.client.exists(self._replacement_key(context_id, replacement)))
 
     async def list_replacements(self, context_id: UUID) -> List[str]:
-        """
-        Lists all replacements for a specific context.
-        """
         replacements = await self.client.smembers(self._replacements_set_key(context_id))
         # Convert from bytes to string
         return [r.decode("utf-8") for r in replacements] if replacements else []
 
     async def get_all_context_data(self, context_id: UUID) -> Dict[str, Tuple[str, str]]:
-        """
-        Gets all data for a specific context.
-        """
         result = {}
         replacements = await self.list_replacements(context_id)
 
@@ -169,9 +172,6 @@ class ValkeyStorage(BaseStorage):
         return result
 
     async def get_stats(self) -> Dict[str, int]:
-        """
-        Gets statistics about the storage.
-        """
         stats = {}
 
         # Get count of contexts
@@ -191,15 +191,12 @@ class ValkeyStorage(BaseStorage):
         return stats
 
     async def iterate_entries(self, context_id: Optional[UUID] = None) -> AsyncIterator[Tuple[str, str, str, UUID]]:
-        """
-        Iterates through all entries in the storage.
-        """
         if context_id is not None:
             # Iterate through entries for a specific context
             replacements = await self.list_replacements(context_id)
             for replacement in replacements:
                 try:
-                    text, label = await self.get(replacement, context_id)
+                    text, label = await self.get_text(replacement, context_id)
                     yield (text, label, replacement, context_id)
                 except ValueError:
                     # Skip if entry was deleted during iteration
@@ -214,9 +211,13 @@ class ValkeyStorage(BaseStorage):
                         yield entry
 
     async def close(self) -> None:
-        """
-        Close the connection to the Valkey server.
-        This should be called when the storage is no longer needed to prevent resource leaks.
-        """
-        # Update to use aclose() instead of deprecated close() method
         await self.client.aclose()
+        self.client = None
+
+    async def __aenter__(self):
+        return self
+
+    def __del__(self):
+        """Warn if connection wasn't properly closed."""
+        if self.client is not None:
+            raise Warning("Valkey connection was not properly closed")

@@ -75,7 +75,7 @@ async def test_put_and_get(valkey_storage: ValkeyStorage, test_context: uuid.UUI
     await storage.put(text, label, replacement, context_id)
 
     # Get the data back and verify
-    retrieved_text, retrieved_label = await storage.get(replacement, context_id)
+    retrieved_text, retrieved_label = await storage.get_text(replacement, context_id)
 
     assert retrieved_text == text
     assert retrieved_label == label
@@ -234,7 +234,7 @@ async def test_context_isolation(valkey_storage: ValkeyStorage) -> None:
     assert await storage.exists("PERSON_A", context2) is True
 
     # Verify the content of the entry in the second context
-    text, label = await storage.get("PERSON_A", context2)
+    text, label = await storage.get_text("PERSON_A", context2)
     assert text == "John Smith"
     assert label == "PERSON"
 
