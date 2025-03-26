@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import AsyncIterator, Dict, List, Optional, Tuple
 from uuid import UUID
 
 
@@ -22,7 +22,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def get(self, replacement: str, context_id: UUID) -> tuple[str, str]:
+    def get_text(self, replacement: str, context_id: UUID) -> Optional[tuple[str, str]]:
         """
         Retrieves the original text and label of the given replacement.
 
@@ -31,10 +31,21 @@ class BaseStorage(ABC):
             context_id (UUID): UUID that identifies the specific context (e.g. a conversation).
 
         Returns:
-            tuple[str, str]: The original text and label of the replacement.
+            Optional[tuple[str, str]]: The original text and label of the replacement, or None if not found.
+        """
+        pass
 
-        Raises:
-            ValueError: If the replacement is not found in storage.
+    @abstractmethod
+    def get_replacement(self, text: str, context_id: UUID) -> Optional[str]:
+        """
+        Retrieves the replacement for the given text. If there is no replacement, return None.
+
+        Args:
+            text (str): The text to get the replacement for
+            context_id (UUID): UUID that identifies the specific context (e.g. a conversation).
+
+        Returns:
+            Optional[str]: The replacement for the text, or None if no replacement is found.
         """
         pass
 
@@ -114,7 +125,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def iterate_entries(self, context_id: Optional[UUID] = None) -> Iterator[Tuple[str, str, str, UUID]]:
+    def iterate_entries(self, context_id: Optional[UUID] = None) -> AsyncIterator[Tuple[str, str, str, UUID]]:
         """
         Iterates through all entries in the storage.
 
@@ -122,6 +133,20 @@ class BaseStorage(ABC):
             context_id (Optional[UUID]): If provided, only iterate through entries for this context.
 
         Returns:
-            Iterator[Tuple[str, str, str, UUID]]: Iterator of (text, label, replacement, context_id) tuples.
+            AsyncIterator[Tuple[str, str, str, UUID]]: iterator of (text, label, replacement, context_id) tuples.
         """
         pass
+
+    @abstractmethod
+    def close(self) -> None:
+        """Close any open connections."""
+        pass
+
+    @abstractmethod
+    async def __aenter__(self):
+        """context manager enter."""
+        pass
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """context manager exit."""
+        await self.close()
