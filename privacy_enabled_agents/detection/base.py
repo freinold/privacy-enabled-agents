@@ -1,15 +1,20 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
+from langchain_core.runnables import Runnable
 from pydantic import BaseModel, Field
 
 from privacy_enabled_agents.base import Entity
 
 
-class DetectionResult(BaseModel):
+class DetectionResult(BaseModel, Runnable):
     entities: list[Entity]
     text: str
     threshold: Optional[float] = Field(ge=0.0, le=1.0, default=None)
+
+
+class DetectionValidationException(Exception):
+    """Exception raised when the input text is invalid."""
 
 
 class BaseDetector(ABC):
@@ -35,12 +40,26 @@ class BaseDetector(ABC):
         return self._supported_entities
 
     @abstractmethod
-    def detect(self, texts: Union[str, list[str]], threshold: Optional[float] = None) -> list[DetectionResult]:
+    def invoke(self, text: str, threshold: Optional[float] = None) -> DetectionResult:
         """
         Detects entities in the given text.
 
         Args:
-            texts (Union[str, list[str]]): The text or list of texts to be analyzed.
+            text (str): The text to be analyzed.
+            threshold (Optional[float]): The threshold for the detection process. Not all detectors may use this parameter.
+
+        Returns:
+            DetectionResult: A list of DetectionResults containing the detected entities.
+        """
+        pass
+
+    @abstractmethod
+    def batch(self, texts: Sequence[str], threshold: Optional[float] = None) -> list[DetectionResult]:
+        """
+        Detects entities in a batch of texts.
+
+        Args:
+            texts (Sequence[str]): The texts to be analyzed.
             threshold (Optional[float]): The threshold for the detection process. Not all detectors may use this parameter.
 
         Returns:
@@ -56,7 +75,7 @@ class BaseDetector(ABC):
             text (str): The text to be validated.
 
         Raises:
-            ValueError: If the input is not valid.
+            DetectionValidationException: If the input text is invalid.
         """
         if isinstance(texts, str):
             texts = [texts]
