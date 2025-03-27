@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Sequence
 
 from gliner import GLiNER
 
@@ -19,29 +19,44 @@ class GlinerPIIDetector(BaseDetector):
     def __init__(self) -> None:
         self._gliner = GLiNER.from_pretrained(self._model)
 
-    def detect(self, texts: Union[str, list[str]], threshold: float = 0.5) -> list[DetectionResult]:
+    def invoke(self, text: str, threshold: float = 0.5) -> DetectionResult:
+        """
+        Detect PII entities in the given text.
+
+        Args:
+            text (str): Text to detect PII entities in.
+            threshold (float): Threshold for the model to consider an entity as a PII entity. Defaults to 0.5.
+
+        Returns:
+            DetectionResult: DetectionResult object containing the detected entities.
+
+        Raises:
+            DetectionValidationError: If the text is not of type str or its length is 0.
+        """
+        self.validate_input(text)
+        entities = self._gliner.predict_entities(text=text, labels=self._supported_entities, threshold=threshold)
+        detection_result = DetectionResult.model_validate({"entities": entities, "text": text, "threshold": threshold})
+        return detection_result
+
+    def batch(self, texts: Sequence[str], threshold: float = 0.5) -> list[DetectionResult]:
         """
         Detect PII entities in the given texts.
 
         Args:
-            texts (Union[str, list[str]]): Texts to detect PII entities in.
-            threshold (float): Threshold for the model to consider an entity as a PII entity.
+            texts (Sequence[str]): List of texts to detect PII entities in.
+            threshold (float): Threshold for the model to consider an entity as a PII entity. Defaults to 0.5.
 
         Returns:
             list[DetectionResult]: List of DetectionResult objects containing the detected entities.
+
+        Raises:
+            DetectionValidationError: If any the texts are not of type str or their length is 0.
         """
         self.validate_input(texts)
-
-        if isinstance(texts, str):
-            texts = [texts]
-
-        predictions_per_text = self._gliner.batch_predict_entities(texts=texts, labels=self._supported_entities, threshold=threshold)
-
+        batch_entities = self._gliner.batch_predict_entities(texts=texts, labels=self._supported_entities, threshold=threshold)
         detection_results: list[DetectionResult] = []
-
-        for predictions, text in zip(predictions_per_text, texts):
-            detection_results.append(DetectionResult.model_validate({"entities": predictions, "text": text, "threshold": threshold}))
-
+        for entities, text in zip(batch_entities, texts):
+            detection_results.append(DetectionResult.model_validate({"entities": entities, "text": text, "threshold": threshold}))
         return detection_results
 
 
@@ -73,27 +88,42 @@ class GlinerMedicalDetector(BaseDetector):
         super().__init__(supported_entities=self._supported_entities)
         self._gliner = GLiNER.from_pretrained(self._model)
 
-    def detect(self, texts: Union[str, list[str]], threshold: float = 0.3) -> list[DetectionResult]:
+    def invoke(self, text: str, threshold: float = 0.5) -> DetectionResult:
+        """
+        Detect medical entities in the given text.
+
+        Args:
+            text (str): Text to detect PII entities in.
+            threshold (float): Threshold for the model to consider an entity as a PII entity. Defaults to 0.5.
+
+        Returns:
+            DetectionResult: DetectionResult object containing the detected entities.
+
+        Raises:
+            DetectionValidationError: If the text is not of type str or its length is 0.
+        """
+        self.validate_input(text)
+        entities = self._gliner.predict_entities(text=text, labels=self._supported_entities, threshold=threshold)
+        detection_result = DetectionResult.model_validate({"entities": entities, "text": text, "threshold": threshold})
+        return detection_result
+
+    def batch(self, texts: Sequence[str], threshold: float = 0.5) -> list[DetectionResult]:
         """
         Detect medical entities in the given texts.
 
         Args:
-            texts (Union[str, list[str]]): Texts to detect medical entities in.
-            threshold (float): Threshold for the model to consider an entity as a medical entity.
+            texts (Sequence[str]): List of texts to detect PII entities in.
+            threshold (float): Threshold for the model to consider an entity as a PII entity. Defaults to 0.5.
 
         Returns:
             list[DetectionResult]: List of DetectionResult objects containing the detected entities.
+
+        Raises:
+            DetectionValidationError: If any the texts are not of type str or their length is 0.
         """
         self.validate_input(texts)
-
-        if isinstance(texts, str):
-            texts = [texts]
-
-        predictions_per_text = self._gliner.batch_predict_entities(texts=texts, labels=self._supported_entities, threshold=threshold)
-
+        batch_entities = self._gliner.batch_predict_entities(texts=texts, labels=self._supported_entities, threshold=threshold)
         detection_results: list[DetectionResult] = []
-
-        for predictions, text in zip(predictions_per_text, texts):
-            detection_results.append(DetectionResult.model_validate({"entities": predictions, "text": text, "threshold": threshold}))
-
+        for entities, text in zip(batch_entities, texts):
+            detection_results.append(DetectionResult.model_validate({"entities": entities, "text": text, "threshold": threshold}))
         return detection_results
