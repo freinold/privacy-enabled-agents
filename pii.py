@@ -18,8 +18,8 @@ def main() -> None:
         if text.lower() == "exit":
             break
 
-        pii_detection_results = pii_detector.detect(texts=text)
-        medical_detection_results = medical_detector.detect(texts=text)
+        pii_detection_results = pii_detector.invoke(texts=text)
+        medical_detection_results = medical_detector.invoke(texts=text)
 
         print(f"{pii_detection_results = }")
         print(f"{medical_detection_results = }")
