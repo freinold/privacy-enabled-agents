@@ -43,28 +43,6 @@ class BaseReplacer(ABC):
             return True
         return all(entity.label in self._supported_entities for entity in entities)
 
-    def restore(self, text: str, context_id: UUID) -> str:
-        """
-        Restores the replaced entities in the text.
-
-        Args:
-            text (str): The text to be processed.
-            context_id (UUID): The context ID for the restoration process.
-
-        Returns:
-            str: The text with the entities restored.
-        """
-        # Get all replacements for the context_id
-        replacements = self.storage.list_replacements(context_id)
-
-        # Restore the text by replacing placeholders with original text
-        for replacement in replacements:
-            if replacement in text:
-                original_text = self.storage.get_text(replacement, context_id)
-                text = text.replace(replacement, original_text)
-
-        return text
-
     def replace(self, text: str, entities: list[Entity], context_id: UUID) -> str:
         """
         Replaces the given entities in the text.
@@ -92,6 +70,28 @@ class BaseReplacer(ABC):
             # Replace the entity in the text
             text = text[: entity.start + text_offset] + replacement + text[entity.end + text_offset :]
             text_offset += len(replacement) - len(entity.text)
+
+        return text
+
+    def restore(self, text: str, context_id: UUID) -> str:
+        """
+        Restores the replaced entities in the text.
+
+        Args:
+            text (str): The text to be processed.
+            context_id (UUID): The context ID for the restoration process.
+
+        Returns:
+            str: The text with the entities restored.
+        """
+        # Get all replacements for the context_id
+        replacements = self.storage.list_replacements(context_id)
+
+        # Restore the text by replacing placeholders with original text
+        for replacement in replacements:
+            if replacement in text:
+                original_text = self.storage.get_text(replacement, context_id)
+                text = text.replace(replacement, original_text)
 
         return text
 
