@@ -11,7 +11,6 @@ dependencies = [
     "langgraph>=0.2.60",
     "python-dotenv>=1.0.1",
     "langfuse>=2.57.4",
-    "gliner[gpu]>=0.2.14",
     "truststore>=0.10.0",
     "pydantic>=2.10.4",
     "langchain-community>=0.3.18",
@@ -19,6 +18,10 @@ dependencies = [
     "phonenumbers>=8.13.55",
     "valkey>=6.1.0",
     "faker>=37.1.0",
+    "onnxruntime-gpu>=1.22.0",
+    "onnxruntime==1.21.0",
+    "torch>=2.7.0",
+    "gliner[gpu]>=0.2.19",
 ]
 
 [dependency-groups]
@@ -37,12 +40,12 @@ default = true
 
 [[tool.uv.index]]
 name = "pytorch"
-url = "https://download.pytorch.org/whl/cu124"
+url = "https://download.pytorch.org/whl/cu128"
 explicit = true
 
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [tool.pytest.ini_options]
