@@ -16,10 +16,11 @@ class GlinerPIIDetector(BaseDetector):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self._model: str = "E3-JSI/gliner-multi-pii-domains-v1"
         self._supported_entities = {"person", "email", "phone number", "address", "iban", "credit card number", "location"}
         self._default_threshold: float = 0.5
-        self._gliner = GLiNER.from_pretrained(self._model)
+        self._gliner: GLiNER = GLiNER.from_pretrained(self._model)
 
     def invoke(
         self,
@@ -60,7 +61,7 @@ class GlinerPIIDetector(BaseDetector):
 
         # Detect entities in the batch of texts
         batch_entities = self._gliner.batch_predict_entities(
-            texts=inputs,
+            texts=list(inputs),
             labels=self._supported_entities,
             threshold=threshold if threshold else self._default_threshold,
         )
@@ -80,6 +81,7 @@ class GlinerMedicalDetector(BaseDetector):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self._model: str = "Ihor/gliner-biomed-large-v1.0"
         self._supported_entities = {
             "Anatomy",
@@ -101,7 +103,7 @@ class GlinerMedicalDetector(BaseDetector):
             "Virus",
         }
         self._default_threshold: float = 0.5
-        self._gliner = GLiNER.from_pretrained(self._model)
+        self._gliner: GLiNER = GLiNER.from_pretrained(self._model)
 
     def invoke(
         self,
@@ -142,7 +144,7 @@ class GlinerMedicalDetector(BaseDetector):
 
         # Detect entities in the batch of texts
         batch_entities = self._gliner.batch_predict_entities(
-            texts=inputs,
+            texts=list(inputs),
             labels=self._supported_entities,
             threshold=threshold if threshold else self._default_threshold,
         )
