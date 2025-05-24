@@ -4,12 +4,10 @@ from privacy_enabled_agents.base import Entity
 from privacy_enabled_agents.replacement.base import BaseReplacer
 
 
-class HashReplacer(BaseReplacer):
-    """
-    Replacer that replaces entities with their hash values.
-    """
+class MockEncryptionReplacer(BaseReplacer):
+    """A replacer only to be used with the EncryptionStorage class."""
 
     _supported_entities = "ANY"  # Allow all entities
 
     def create_replacement(self, entity: Entity, context_id: UUID) -> str:
-        return hex(hash(entity.text + str(context_id)))
+        raise NotImplementedError("MockEncryptionReplacer does not support create_replacement operation.")

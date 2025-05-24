@@ -1,0 +1,17 @@
+from uuid import UUID
+
+from privacy_enabled_agents.base import Entity
+from privacy_enabled_agents.replacement.base import BaseReplacer
+
+
+class PlaceholderReplacer(BaseReplacer):
+    """
+    Replacer that replaces entities with placeholders.
+    """
+
+    _supported_entities = "ANY"  # Allow all entities
+
+    def create_replacement(self, entity: Entity, context_id: UUID) -> str:
+        formatted_label = entity.label.replace(" ", "_").upper()
+        counter = self.storage.inc_label_counter(formatted_label, context_id)
+        return f"<{formatted_label}-{counter}>"
