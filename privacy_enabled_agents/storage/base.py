@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import AsyncIterator, Dict, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 from uuid import UUID
 
 
@@ -64,7 +64,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def clear(self, context_id: UUID = None) -> None:
+    def clear(self, context_id: UUID | None = None) -> None:
         """
         Clears the whole storage.
 
@@ -139,7 +139,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def iterate_entries(self, context_id: Optional[UUID] = None) -> AsyncIterator[Tuple[str, str, str, UUID]]:
+    def iterate_entries(self, context_id: Optional[UUID] = None) -> Iterator[Tuple[str, str, str, UUID]]:
         """
         Iterates through all entries in the storage.
 
@@ -147,7 +147,7 @@ class BaseStorage(ABC):
             context_id (Optional[UUID]): If provided, only iterate through entries for this context.
 
         Returns:
-            AsyncIterator[Tuple[str, str, str, UUID]]: iterator of (text, label, replacement, context_id) tuples.
+            Iterator[Tuple[str, str, str, UUID]]: iterator of (text, label, replacement, context_id) tuples.
         """
         pass
 
@@ -155,12 +155,3 @@ class BaseStorage(ABC):
     def close(self) -> None:
         """Close any open connections."""
         pass
-
-    @abstractmethod
-    async def __aenter__(self):
-        """context manager enter."""
-        pass
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """context manager exit."""
-        await self.close()
