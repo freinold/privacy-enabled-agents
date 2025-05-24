@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Literal, Optional, Sequence, Set, Union
+from typing import Any, Literal, Optional, Sequence, Union
 
 from langchain_core.runnables import RunnableConfig, RunnableSerializable
 from pydantic import Field
@@ -21,19 +21,19 @@ class BaseDetector(RunnableSerializable[DetectorInput, DetectorOutput], ABC):
     Provides a common interface for all detection techniques.
     """
 
-    _supported_entities: Set[str] | Literal["ANY"] = Field(
+    supported_entities: set[str] | Literal["ANY"] = Field(
         default="ANY",
         description="Supported entities for the detector.",
     )
 
-    def get_supported_entities(self) -> Set[str] | Literal["ANY"]:
+    def get_supported_entities(self) -> set[str] | Literal["ANY"]:
         """
-        Returns the list of entities supported by this detector.
+        Returns the set of entities supported by this detector.
 
         Returns:
-            Set[str] | Literal["ANY"]: The set of supported entities.
+            set[str] | Literal["ANY"]: The set of supported entities.
         """
-        return self._supported_entities
+        return self.supported_entities
 
     @abstractmethod
     def invoke(
@@ -90,8 +90,6 @@ class BaseDetector(RunnableSerializable[DetectorInput, DetectorOutput], ABC):
             raise ValueError("Input text must not be None.")
         elif not isinstance(text, str):
             raise ValueError("Input text must be a string.")
-        elif len(text.strip()) == 0:
-            raise ValueError("Input text must not be empty.")
 
     def validate_threshold(self, threshold: float | None) -> None:
         """

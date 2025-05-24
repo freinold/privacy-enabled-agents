@@ -18,8 +18,22 @@ class GlinerPIIDetector(BaseDetector):
     def __init__(self) -> None:
         super().__init__()
         self._model: str = "E3-JSI/gliner-multi-pii-domains-v1"
-        self._supported_entities = {"person", "email", "phone number", "address", "iban", "credit card number", "location"}
-        self._default_threshold: float = 0.5
+        self.supported_entities = {
+            "person",
+            "email",
+            "phone number",
+            "address",
+            "iban",
+            "credit card number",
+            "location",
+            "age",
+            "date",
+            "country",
+            "state",
+            "city",
+            "zip code",
+        }
+        self._default_threshold: float = 0.3
         self._gliner: GLiNER = GLiNER.from_pretrained(self._model)
 
     def invoke(
@@ -37,7 +51,7 @@ class GlinerPIIDetector(BaseDetector):
         # Predict the entities
         entities = self._gliner.predict_entities(
             text=input,
-            labels=self._supported_entities,
+            labels=self.supported_entities,
             threshold=threshold if threshold else self._default_threshold,
         )
 
@@ -62,7 +76,7 @@ class GlinerPIIDetector(BaseDetector):
         # Detect entities in the batch of texts
         batch_entities = self._gliner.batch_predict_entities(
             texts=list(inputs),
-            labels=self._supported_entities,
+            labels=self.supported_entities,
             threshold=threshold if threshold else self._default_threshold,
         )
 
@@ -76,14 +90,14 @@ class GlinerMedicalDetector(BaseDetector):
     """
     GlinerMedicalDetector class for detecting medical entities in text using the GLiNER architecture.
 
-    - Model: Ihor/gliner-biomed-large-v1.0\n
+    - Model: Ihor/gliner-biomed-large-v1.0
     - Link: https://huggingface.co/Ihor/gliner-biomed-large-v1.0
     """
 
     def __init__(self) -> None:
         super().__init__()
         self._model: str = "Ihor/gliner-biomed-large-v1.0"
-        self._supported_entities = {
+        self.supported_entities = {
             "Anatomy",
             "Bacteria",
             "Demographic information",
@@ -120,7 +134,7 @@ class GlinerMedicalDetector(BaseDetector):
         # Predict the entities
         entities = self._gliner.predict_entities(
             text=input,
-            labels=self._supported_entities,
+            labels=self.supported_entities,
             threshold=threshold if threshold else self._default_threshold,
         )
 
@@ -145,7 +159,7 @@ class GlinerMedicalDetector(BaseDetector):
         # Detect entities in the batch of texts
         batch_entities = self._gliner.batch_predict_entities(
             texts=list(inputs),
-            labels=self._supported_entities,
+            labels=self.supported_entities,
             threshold=threshold if threshold else self._default_threshold,
         )
 
