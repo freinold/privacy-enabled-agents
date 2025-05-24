@@ -1,8 +1,8 @@
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Literal, Optional, Sequence, Union
 
 from gliner import GLiNER
 from langchain_core.runnables import RunnableConfig
-from pydantic import TypeAdapter
+from pydantic import Field, TypeAdapter
 
 from privacy_enabled_agents.detection.base import BaseDetector, DetectorInput, DetectorOutput
 
@@ -15,44 +15,42 @@ class GlinerPIIDetector(BaseDetector):
     - Link: https://huggingface.co/E3-JSI/gliner-multi-pii-domains-v1
     """
 
+    model: str = "E3-JSI/gliner-multi-pii-domains-v1"
+    supported_entities: set[str] | Literal["ANY"] = {
+        "person",
+        "email",
+        "phone number",
+        "address",
+        "iban",
+        "credit card number",
+        "location",
+        "age",
+        "date",
+        "country",
+        "state",
+        "city",
+        "zip code",
+    }
+    threshold: float = Field(default=0.5, le=1.0, ge=0.0, description="Threshold for entity detection confidence.")
+
     def __init__(self) -> None:
         super().__init__()
-        self._model: str = "E3-JSI/gliner-multi-pii-domains-v1"
-        self.supported_entities = {
-            "person",
-            "email",
-            "phone number",
-            "address",
-            "iban",
-            "credit card number",
-            "location",
-            "age",
-            "date",
-            "country",
-            "state",
-            "city",
-            "zip code",
-        }
-        self._default_threshold: float = 0.3
-        self._gliner: GLiNER = GLiNER.from_pretrained(self._model)
+        self._gliner: GLiNER = GLiNER.from_pretrained(self.model)
 
     def invoke(
         self,
         input: DetectorInput,
         config: Optional[RunnableConfig] = None,
-        *,
-        threshold: float | None = None,
         **kwargs: Any,
     ) -> DetectorOutput:
         # Validate the input
         self.validate_text(input)
-        self.validate_threshold(threshold)
 
         # Predict the entities
         entities = self._gliner.predict_entities(
             text=input,
             labels=self.supported_entities,
-            threshold=threshold if threshold else self._default_threshold,
+            threshold=self.threshold,
         )
 
         # Validate the output
@@ -64,20 +62,17 @@ class GlinerPIIDetector(BaseDetector):
         self,
         inputs: Sequence[DetectorInput],
         config: Union[RunnableConfig, list[RunnableConfig], None] = None,
-        *,
-        threshold: float | None = None,
         **kwargs: Any,
     ) -> list[DetectorOutput]:
         # Validate the input
         for input in inputs:
             self.validate_text(input)
-        self.validate_threshold(threshold)
 
         # Detect entities in the batch of texts
         batch_entities = self._gliner.batch_predict_entities(
             texts=list(inputs),
             labels=self.supported_entities,
-            threshold=threshold if threshold else self._default_threshold,
+            threshold=self.threshold,
         )
 
         # Validate the output
@@ -94,49 +89,43 @@ class GlinerMedicalDetector(BaseDetector):
     - Link: https://huggingface.co/Ihor/gliner-biomed-large-v1.0
     """
 
+    model: str = "Ihor/gliner-biomed-large-v1.0"
+    supported_entities: set[str] | Literal["ANY"] = {
+        "Anatomy",
+        "Bacteria",
+        "Demographic information",
+        "Disease",
+        "Doctor",
+        "Drug dosage",
+        "Drug frequency",
+        "Drug",
+        "Illness",
+        "Lab test value",
+        "Lab test",
+        "Medical Worker",
+        "Procedure",
+        "Symptom",
+        "Test",
+        "Treatment",
+        "Virus",
+    }
+    threshold: float = Field(default=0.3, le=1.0, ge=0.0, description="Threshold for entity detection confidence.")
+
     def __init__(self) -> None:
         super().__init__()
-        self._model: str = "Ihor/gliner-biomed-large-v1.0"
-        self.supported_entities = {
-            "Anatomy",
-            "Bacteria",
-            "Demographic information",
-            "Disease",
-            "Doctor",
-            "Drug dosage",
-            "Drug frequency",
-            "Drug",
-            "Illness",
-            "Lab test value",
-            "Lab test",
-            "Medical Worker",
-            "Procedure",
-            "Symptom",
-            "Test",
-            "Treatment",
-            "Virus",
-        }
-        self._default_threshold: float = 0.5
-        self._gliner: GLiNER = GLiNER.from_pretrained(self._model)
+        self._gliner: GLiNER = GLiNER.from_pretrained(self.model)
 
     def invoke(
         self,
         input: DetectorInput,
         config: RunnableConfig | None = None,
-        *,
-        threshold: float | None = None,
         **kwargs: Any,
     ) -> DetectorOutput:
         # Validate the input
         self.validate_text(input)
-        self.validate_threshold(threshold)
 
         # Predict the entities
-        entities = self._gliner.predict_entities(
-            text=input,
-            labels=self.supported_entities,
-            threshold=threshold if threshold else self._default_threshold,
-        )
+        entities = self._gliner.predict_entities(text=input, labels=self.supported_entities, threshold=self.threshold)
 
         # Validate the output
         type_adapter = TypeAdapter(DetectorOutput)
@@ -147,20 +136,17 @@ class GlinerMedicalDetector(BaseDetector):
         self,
         inputs: Sequence[DetectorInput],
         config: RunnableConfig | list[RunnableConfig] | None = None,
-        *,
-        threshold: float | None = None,
         **kwargs: Any,
     ) -> list[DetectorOutput]:
         # Validate the input
         for input in inputs:
             self.validate_text(input)
-        self.validate_threshold(threshold)
 
         # Detect entities in the batch of texts
         batch_entities = self._gliner.batch_predict_entities(
             texts=list(inputs),
             labels=self.supported_entities,
-            threshold=threshold if threshold else self._default_threshold,
+            threshold=self.threshold,
         )
 
         # Validate the output
