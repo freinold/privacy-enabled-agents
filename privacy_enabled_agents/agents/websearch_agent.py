@@ -1,124 +1,93 @@
 # ruff: noqa: E402 (no import at top level) suppressed on this file as we need to inject the truststore before importing the other modules
 
 from dotenv import load_dotenv
+from langchain_core.messages import AIMessage, BaseMessage
 from truststore import inject_into_ssl
 
 dotenv_loaded = load_dotenv()
 inject_into_ssl()
 
-from datetime import datetime
-from typing import Annotated
-from uuid import uuid4
+# End of special imports
 
-from langchain.tools import BaseTool
-from langchain_community.tools import SearxSearchResults
-from langchain_community.utilities import SearxSearchWrapper
-from langchain_core.messages import BaseMessage, HumanMessage
+import logging.config
+
+from langchain.schema import HumanMessage
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_openai import ChatOpenAI
 from langfuse.callback import CallbackHandler
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import StateGraph
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode, tools_condition
-from typing_extensions import TypedDict
+from langgraph.checkpoint.redis import RedisSaver
+from langgraph.prebuilt import create_react_agent
+from yaml import safe_load
 
+from privacy_enabled_agents.chat_models.privacy_wrapper import PrivacyEnabledChatModel
+from privacy_enabled_agents.detection.gliner import GlinerPIIDetector
+from privacy_enabled_agents.replacement.placeholder import PlaceholderReplacer
+from privacy_enabled_agents.storage.valkey import ValkeyStorage
 
-class State(TypedDict):
-    # Messages have the type "list". The `add_messages` function
-    # in the annotation defines how this state key should be updated
-    # (in this case, it appends messages to the list, rather than overwriting them)
-    messages: Annotated[list, add_messages]
+with open("logconf.yaml", "r", encoding="utf-8") as file:
+    log_config = safe_load(file)
 
+logging.config.dictConfig(log_config)
 
-# Create tools
-search = SearxSearchWrapper(engines=["bing"])
+langfuse_handler = CallbackHandler(trace_name="Basic Agent")
+langfuse_handler.auth_check()
 
-websearch_tool = SearxSearchResults(
-    name="websearch",
-    num_results=5,
-    description="Search for general information on the web",
-    wrapper=search,
-)
-
-
-class CurrentDate(BaseTool):
-    name: str = "current_date"
-    description: str = "A tool that returns the current date and time in ISO format."
-
-    def _run(self) -> str:
-        return datetime.now().isoformat()
-
-
-date_tool = CurrentDate()
-
-tools = [
-    websearch_tool,
-    date_tool,
-]
-
-# Create chat model and bind tools
 chat_model = ChatOpenAI(model="gpt-4o")
-chat_model_with_tools = chat_model.bind_tools(
-    tools, parallel_tool_calls=False
-)  # Disable parallel tool calls to ensure that the tools are called in the order they are defined
+detector = GlinerPIIDetector()
+storage = ValkeyStorage()
+replacer = PlaceholderReplacer(storage=storage)
+privacy_chat_model = PrivacyEnabledChatModel(model=chat_model, replacer=replacer, detector=detector)
 
-# Create a graph builder
-graph_builder = StateGraph(State)
+search = DuckDuckGoSearchRun()
 
-# Create tool node
-tool_node = ToolNode(tools)
+system_prompt = """
+You are a helpful assistant with privacy protection capabilities.
 
+When you receive a user query, it can include obstructed personal information (PII) you can't see, such as names, addresses, or other sensitive data.
+Your task is to assist the user while ensuring that any PII is not exposed in your responses.
 
-# Create chatbot node
-def chatbot_with_tools(state: State):
-    return {"messages": [chat_model_with_tools.invoke(state["messages"])]}
+Use the provided tools like always, passing the obstructed PII if needed.
+The user will see the full information, don't worry about that.
+"""
 
+with RedisSaver.from_conn_string("redis://localhost:6380") as checkpointer:
+    checkpointer.setup()
 
-# Add nodes to the graph
-graph_builder.add_node("chatbot", chatbot_with_tools)
-graph_builder.add_node("tools", tool_node)
+    graph = create_react_agent(
+        model=privacy_chat_model,
+        tools=[search],
+        prompt=system_prompt,
+        checkpointer=checkpointer,
+    ).with_config({"callbacks": [langfuse_handler]})
 
-# Add edges to the graph
-graph_builder.add_conditional_edges("chatbot", tools_condition)
-graph_builder.add_edge("tools", "chatbot")
-graph_builder.set_entry_point("chatbot")
-
-# Create a callback handler for tracing
-langfuse_handler = CallbackHandler(trace_name="Websearch Agent")
-
-# Setup memory saver
-memory_saver = MemorySaver()
-
-# Compile the graph
-graph = graph_builder.compile(checkpointer=memory_saver).with_config({"callbacks": [langfuse_handler]})
-
-
+# Save the graph as an image
 img = graph.get_graph().draw_mermaid_png()
 with open("img/websearch_agent.png", "wb") as f:
     f.write(img)
 
 
-thread_id = uuid4()
-
-
-def stream_graph_updates(user_input: str):
-    input_message = HumanMessage(content=user_input)
-    input_message.pretty_print()
-    for event in graph.stream(input={"messages": [input_message]}, config={"configurable": {"thread_id": thread_id}}):
+def _stream_graph_updates(user_input: str):
+    for event in graph.stream(
+        {"messages": [HumanMessage(content=user_input)]}, config={"configurable": {"thread_id": privacy_chat_model.context_id}}
+    ):
         for value in event.values():
-            for message in value["messages"]:
-                if isinstance(message, BaseMessage):
-                    message.pretty_print()
+            latest_message: BaseMessage = value["messages"][-1]
+            if isinstance(latest_message, AIMessage):
+                if len(latest_message.content) > 0:
+                    print("🤖 Assistant:", latest_message.content)
+                elif len(latest_message.tool_calls) > 0:
+                    for tool_call in latest_message.tool_calls:
+                        print(f"🔨 Assistant is calling tool: {tool_call.get('name')} with arguments: {tool_call.get('args')}")
 
 
 def run_agent() -> None:
     while True:
-        user_input = input("User: ")
-        if user_input.lower() in ["quit", "exit", "q"]:
+        user_input = input("🧑 User: ")
+        if user_input.lower() in ["quit", "exit", "q", "bye"]:
             print("Goodbye!")
             break
 
-        stream_graph_updates(user_input)
+        _stream_graph_updates(user_input)
 
 
 if __name__ == "__main__":

@@ -6,49 +6,56 @@ from truststore import inject_into_ssl
 dotenv_loaded = load_dotenv()
 inject_into_ssl()
 
-from typing import Annotated
+# End of special imports
+
+import logging.config
 
 from langchain.schema import HumanMessage
 from langchain_openai import ChatOpenAI
 from langfuse.callback import CallbackHandler
-from langgraph.graph import END, START, StateGraph
-from langgraph.graph.message import add_messages
-from typing_extensions import TypedDict
+from langgraph.checkpoint.redis import RedisSaver
+from langgraph.prebuilt import create_react_agent
+from yaml import safe_load
 
+from privacy_enabled_agents.chat_models.privacy_wrapper import PrivacyEnabledChatModel
+from privacy_enabled_agents.detection.gliner import GlinerPIIDetector
+from privacy_enabled_agents.replacement.placeholder import PlaceholderReplacer
+from privacy_enabled_agents.storage.valkey import ValkeyStorage
 
-class State(TypedDict):
-    # Messages have the type "list". The `add_messages` function
-    # in the annotation defines how this state key should be updated
-    # (in this case, it appends messages to the list, rather than overwriting them)
-    messages: Annotated[list, add_messages]
+with open("logconf.yaml", "r", encoding="utf-8") as file:
+    log_config = safe_load(file)
 
-
-graph_builder = StateGraph(State)
-
+logging.config.dictConfig(log_config)
 
 langfuse_handler = CallbackHandler(trace_name="Basic Agent")
-
+langfuse_handler.auth_check()
 
 chat_model = ChatOpenAI(model="gpt-4o")
+detector = GlinerPIIDetector()
+storage = ValkeyStorage()
+replacer = PlaceholderReplacer(storage=storage)
+privacy_chat_model = PrivacyEnabledChatModel(model=chat_model, replacer=replacer, detector=detector)
 
+with RedisSaver.from_conn_string("redis://localhost:6380") as checkpointer:
+    checkpointer.setup()
 
-def _chatbot(state: State):
-    return {"messages": [chat_model.invoke(state["messages"])]}
-
-
-graph_builder.add_node("chatbot", _chatbot)
-graph_builder.add_edge(START, "chatbot")
-graph_builder.add_edge("chatbot", END)
-graph = graph_builder.compile().with_config({"callbacks": [langfuse_handler]})
+    graph = create_react_agent(
+        model=privacy_chat_model,
+        tools=[],
+        prompt="You are a helpful assistant.",
+        checkpointer=checkpointer,
+    ).with_config({"callbacks": [langfuse_handler]})
 
 # Save the graph as an image
 img = graph.get_graph().draw_mermaid_png()
-with open("basic_agent.png", "wb") as f:
+with open("img/basic_agent.png", "wb") as f:
     f.write(img)
 
 
 def _stream_graph_updates(user_input: str):
-    for event in graph.stream({"messages": [HumanMessage(content=user_input)]}):
+    for event in graph.stream(
+        {"messages": [HumanMessage(content=user_input)]}, config={"configurable": {"thread_id": privacy_chat_model.context_id}}
+    ):
         for value in event.values():
             print("Assistant:", value["messages"][-1].content)
 
@@ -56,7 +63,7 @@ def _stream_graph_updates(user_input: str):
 def run_agent() -> None:
     while True:
         user_input = input("User: ")
-        if user_input.lower() in ["quit", "exit", "q"]:
+        if user_input.lower() in ["quit", "exit", "q", "bye"]:
             print("Goodbye!")
             break
 
