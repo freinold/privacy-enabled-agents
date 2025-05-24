@@ -1,0 +1,41 @@
+version: "3.8"
+name: privacy-enabled-agents
+
+services:
+  valkey:
+    image: dockerhub.muenchen.de/valkey/valkey:8-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./valkey-data:/data
+    command: ["--appendonly", "yes"] # Enable data persistence
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      - VALKEY_SAVE=60 1 # Save DB every 60 seconds if at least 1 change
+    networks:
+      - privacy-network
+    labels:
+      - "com.privacy-enabled-agents.description=Valkey storage backend"
+
+  redis:
+    image: dockerhub.muenchen.de/library/redis:8-alpine
+    ports:
+      - "6380:6379"
+    restart: on-failure
+    networks:
+      - privacy-network
+    labels:
+      - "com.privacy-enabled-agents.description=Redis checkpointer backend"
+
+networks:
+  privacy-network:
+    driver: bridge
+
+volumes:
+  valkey-data:
+    driver: local
