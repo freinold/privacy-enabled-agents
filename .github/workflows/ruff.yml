@@ -5,6 +5,9 @@ jobs:
   ruff:
     permissions:
       contents: read
+    concurrency:
+      group: ruff-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
