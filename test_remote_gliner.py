@@ -4,13 +4,14 @@ from truststore import inject_into_ssl
 
 inject_into_ssl()
 
-from privacy_enabled_agents.detection.gliner import GlinerMedicalDetector, GlinerPIIDetector
+from privacy_enabled_agents.base import Entity
+from privacy_enabled_agents.detection.remote_gliner import RemoteGlinerDetector
 
 
 def main() -> None:
     print("Loading models...")
-    pii_detector = GlinerPIIDetector()
-    medical_detector = GlinerMedicalDetector()
+    pii_detector = RemoteGlinerDetector("http://localhost:8081")
+    medical_detector = RemoteGlinerDetector("http://localhost:8082")
     print("Models loaded.")
 
     while True:
@@ -18,8 +19,8 @@ def main() -> None:
         if text.lower() == "exit":
             break
 
-        pii_detection_results = pii_detector.invoke(texts=text)
-        medical_detection_results = medical_detector.invoke(texts=text)
+        pii_detection_results: list[Entity] = pii_detector.invoke(input=text)
+        medical_detection_results: list[Entity] = medical_detector.invoke(input=text)
 
         print(f"{pii_detection_results = }")
         print(f"{medical_detection_results = }")

@@ -1,11 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class Entity(BaseModel):
     start: int
     end: int
     text: str
-    label: str
+    label: str = Field(validation_alias=AliasChoices("label", "type"))
     score: float = Field(ge=0.0, le=1.0)
 
 

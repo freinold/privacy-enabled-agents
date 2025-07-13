@@ -1,6 +1,7 @@
 # ruff: noqa: E402 (no import at top level) suppressed on this file as we need to inject the truststore before importing the other modules
 
 from dotenv import load_dotenv
+from langchain_core.runnables import RunnableConfig
 from truststore import inject_into_ssl
 
 dotenv_loaded = load_dotenv()
@@ -12,13 +13,13 @@ import logging.config
 
 from langchain.schema import HumanMessage
 from langchain_openai import ChatOpenAI
-from langfuse.callback import CallbackHandler
+from langfuse.langchain import CallbackHandler
 from langgraph.checkpoint.redis import RedisSaver
 from langgraph.prebuilt import create_react_agent
 from yaml import safe_load
 
 from privacy_enabled_agents.chat_models.privacy_wrapper import PrivacyEnabledChatModel
-from privacy_enabled_agents.detection.gliner import GlinerPIIDetector
+from privacy_enabled_agents.detection.remote_gliner import RemoteGlinerDetector
 from privacy_enabled_agents.replacement.placeholder import PlaceholderReplacer
 from privacy_enabled_agents.storage.valkey import ValkeyStorage
 
@@ -27,11 +28,10 @@ with open("logconf.yaml", "r", encoding="utf-8") as file:
 
 logging.config.dictConfig(log_config)
 
-langfuse_handler = CallbackHandler(trace_name="Basic Agent")
-langfuse_handler.auth_check()
+langfuse_handler = CallbackHandler()
 
 chat_model = ChatOpenAI(model="gpt-4o")
-detector = GlinerPIIDetector()
+detector = RemoteGlinerDetector(base_url="http://localhost:8081")
 storage = ValkeyStorage()
 replacer = PlaceholderReplacer(storage=storage)
 privacy_chat_model = PrivacyEnabledChatModel(model=chat_model, replacer=replacer, detector=detector)
@@ -44,7 +44,7 @@ with RedisSaver.from_conn_string("redis://localhost:6380") as checkpointer:
         tools=[],
         prompt="You are a helpful assistant.",
         checkpointer=checkpointer,
-    ).with_config({"callbacks": [langfuse_handler]})
+    ).with_config(RunnableConfig(callbacks=[langfuse_handler]))
 
 # Save the graph as an image
 img = graph.get_graph().draw_mermaid_png()
