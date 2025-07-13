@@ -13,11 +13,10 @@ on:
       - "**/pyproject.toml"
       - "**/ruff.toml"
 
-permissions:
-  contents: read
-
 jobs:
   dependency-review:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
