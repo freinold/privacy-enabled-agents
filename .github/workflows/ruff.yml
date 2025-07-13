@@ -1,9 +1,10 @@
 name: Ruff
 on: [push, pull_request]
-permissions:
-  contents: read
+
 jobs:
   ruff:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
