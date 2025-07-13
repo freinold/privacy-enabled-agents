@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from pydantic_extra_types.coordinate import Coordinate
 from pydantic_extra_types.phone_numbers import PhoneNumberValidator
 
-from src.custom_types.german_medical_insurance_id import GermanMedicalInsuranceID
+from privacy_enabled_agents.custom_types.german_medical_insurance_id import GermanMedicalInsuranceID
 
 GermanPhoneNumber = Annotated[Union[str, PhoneNumber], PhoneNumberValidator(supported_regions=["DE"], default_region="DE")]
 
