@@ -1,6 +1,6 @@
-# Privacy enabled agents
+# Privacy-enabled Agents
 
-This repository contains the code for my master thesis "Privacy enabled Agents".
+This repository contains the code for my master thesis "Privacy-enabled Agents".
 It is currently a work in progress and will be updated regularly.
 If you have any questions or suggestions, feel free to open an issue or a pull request.
 
