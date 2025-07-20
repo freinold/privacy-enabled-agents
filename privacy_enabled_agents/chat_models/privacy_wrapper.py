@@ -12,7 +12,7 @@ from langchain_core.tools import BaseTool
 from pydantic import Field
 
 from privacy_enabled_agents.base import Entity
-from privacy_enabled_agents.detection.base import BaseDetector, DetectorOutput
+from privacy_enabled_agents.detection.base import BaseDetector
 from privacy_enabled_agents.replacement.base import BaseReplacer
 
 
@@ -29,7 +29,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
         """Input for the replace function."""
 
         messages: list[BaseMessage]
-        detector_outputs_by_uuid: dict[str, DetectorOutput]
+        detector_outputs_by_uuid: dict[str, list[Entity]]
 
     def _generate(
         self,
@@ -81,7 +81,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
         self.chat_model = cast("BaseChatModel", self.chat_model.bind_tools(tools, tool_choice=tool_choice, **kwargs))
         return self
 
-    def _detect_entities(self, messages: list[BaseMessage]) -> tuple[list[BaseMessage], dict[str, DetectorOutput]]:
+    def _detect_entities(self, messages: list[BaseMessage]) -> tuple[list[BaseMessage], dict[str, list[Entity]]]:
         """Detect sensitive information in the messages.
 
         Args:
@@ -126,7 +126,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
                 transformed_texts[tool_call_id] = tool_call_args
 
         # Invoke the detector to analyze the transformed texts
-        detection_results: list[DetectorOutput] = self.detector.batch(
+        detection_results: list[list[Entity]] = self.detector.batch(
             inputs=[text for _, text in transformed_texts.items()],
             context_id=self.context_id,
         )

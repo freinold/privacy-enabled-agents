@@ -61,7 +61,7 @@ class BaseDetector(RunnableSerializable[str, list[Entity]], ABC):
         *,
         threshold: float | None = None,
         **kwargs: Any,
-    ) -> list[Entity]:
+    ) -> list[list[Entity]]:
         """Processes a batch of inputs.
 
         Args:
