@@ -1,7 +1,7 @@
 name: general
 model_id: knowledgator/gliner-x-large
 onnx_enabled: true
-onnx_model_path: onnx/model.onnx
+onnx_model_path: onnx/model_quantized.onnx
 default_threshold: 0.5
 default_entities:
 - address
