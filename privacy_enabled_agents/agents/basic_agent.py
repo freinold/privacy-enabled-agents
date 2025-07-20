@@ -1,7 +1,6 @@
 # ruff: noqa: E402 (no import at top level) suppressed on this file as we need to inject the truststore before importing the other modules
 
 from dotenv import load_dotenv
-from langchain_core.runnables import RunnableConfig
 from truststore import inject_into_ssl
 
 dotenv_loaded = load_dotenv()
@@ -12,6 +11,7 @@ inject_into_ssl()
 import logging.config
 
 from langchain.schema import HumanMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from langfuse.langchain import CallbackHandler
 from langgraph.checkpoint.redis import RedisSaver
@@ -30,11 +30,11 @@ logging.config.dictConfig(log_config)
 
 langfuse_handler = CallbackHandler()
 
-chat_model = ChatOpenAI(model="gpt-4o")
-detector = RemoteGlinerDetector(base_url="http://localhost:8081")
+chat_model = ChatOpenAI(model="gpt-4o")  # type: ignore[unknown-argument]
+detector = RemoteGlinerDetector(base_url="https://freinold-gliner-api.hf.space")
 storage = ValkeyStorage()
 replacer = PlaceholderReplacer(storage=storage)
-privacy_chat_model = PrivacyEnabledChatModel(model=chat_model, replacer=replacer, detector=detector)
+privacy_chat_model = PrivacyEnabledChatModel(model=chat_model, replacer=replacer, detector=detector)  # type: ignore[unknown-argument]
 
 with RedisSaver.from_conn_string("redis://localhost:6380") as checkpointer:
     checkpointer.setup()
