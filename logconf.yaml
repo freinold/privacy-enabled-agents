@@ -8,10 +8,10 @@ handlers:
     level: DEBUG
     formatter: simple
     stream: ext://sys.stdout
-loggers:
-  langfuse:
-    level: DEBUG
-    handlers: [ console ]
+# loggers:
+#   langfuse:
+#     level: DEBUG
+#     handlers: [ console ]
 default:
   level: INFO
   handlers: [ console ]
