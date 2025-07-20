@@ -1,13 +1,17 @@
 # Privacy enabled agents
 
-This repository contains the code for the master thesis "Privacy enabled agents" (TODO: add link to thesis).
+This repository contains the code for my master thesis "Privacy enabled Agents".
+It is currently a work in progress and will be updated regularly.
+If you have any questions or suggestions, feel free to open an issue or a pull request.
 
 ## Installation
 
 ### Prerequisites
 
 - uv is installed: https://docs.astral.sh/uv/getting-started/installation/
-- Docker or another container environment (e.g. Podman) is installed: https://docs.docker.com/get-docker/
+- A container runtime is installed:
+  - Docker: https://docs.docker.com/get-docker/
+  - Podman: https://podman.io/getting-started/installation
 
 ### Setup
 
