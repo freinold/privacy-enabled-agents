@@ -17,6 +17,8 @@ repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0 # Use the ref you want to point at
   hooks:
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
   # Simply check whether files parse as valid python.
   - id: check-ast
   - id: check-json

@@ -13,6 +13,9 @@ on:
       - "**/pyproject.toml"
       - "**/ruff.toml"
 
+permissions:
+  contents: read
+
 jobs:
   dependency-review:
     permissions:
