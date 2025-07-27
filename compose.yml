@@ -2,7 +2,7 @@ name: privacy-enabled-agents
 
 services:
   valkey:
-    image: dockerhub.muenchen.de/valkey/valkey:8-alpine
+    image: valkey/valkey:8-alpine
     ports:
       - "6379:6379"
     volumes:
@@ -22,7 +22,7 @@ services:
       - "com.privacy-enabled-agents.description=Valkey storage backend"
 
   redis:
-    image: dockerhub.muenchen.de/library/redis:8-alpine
+    image: redis:8-alpine
     ports:
       - "6380:6379"
     restart: on-failure
@@ -32,7 +32,7 @@ services:
       - "com.privacy-enabled-agents.description=Redis checkpointer backend"
 
   gliner-api:
-    image: ghcr.io/freinold/gliner-api:latest@sha256:67f48c14a0e2ed7f36adbc2211932b304e558f8357da47f4a9adac86ccd45459
+    image: ghcr.io/freinold/gliner-api:0.3.0
     ports:
       - "8081:8080" # API and Gradio frontend
       - "9091:9090" # Metrics endpoint
