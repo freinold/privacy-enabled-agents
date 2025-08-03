@@ -1,4 +1,5 @@
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
+from typing import Literal
 from uuid import UUID
 
 from faker import Faker
@@ -13,7 +14,7 @@ class PseudonymReplacer(BaseReplacer):
     Replacer that replaces entities with pseudonyms."
     """
 
-    _supported_entities = {
+    _supported_entities: set[str] | Literal["ANY"] = {
         "person",
         "email",
         "phone number",
