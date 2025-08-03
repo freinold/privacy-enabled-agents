@@ -22,9 +22,9 @@ dependencies = [
     "langgraph-checkpoint-redis==0.0.8",
     "duckduckgo-search==8.1.1",
     "stamina==25.1.0",
-    "langchain-mistralai>=0.2.11",
-    "streamlit>=1.47.1",
-    "langgraph-cli>=0.3.6",
+    "langchain-mistralai==0.2.11",
+    "streamlit==1.47.1",
+    "langgraph-cli==0.3.6",
 ]
 
 [dependency-groups]
