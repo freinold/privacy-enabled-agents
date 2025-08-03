@@ -13,7 +13,6 @@ dependencies = [
     "langfuse==3.2.1",
     "truststore==0.10.3",
     "pydantic==2.11.7",
-    "langchain-community==0.3.27",
     "pydantic-extra-types==2.10.5",
     "phonenumbers==9.0.10",
     "valkey==6.1.0",
@@ -22,9 +21,12 @@ dependencies = [
     "langgraph-checkpoint-redis==0.0.8",
     "duckduckgo-search==8.1.1",
     "stamina==25.1.0",
-    "langchain-mistralai>=0.2.11",
-    "streamlit>=1.47.1",
-    "langgraph-cli>=0.3.6",
+    "langchain-mistralai==0.2.11",
+    "streamlit==1.47.1",
+    "langgraph-cli==0.3.6",
+    "schwifty==2025.7.0",
+    "geopy==2.4.1",
+    "ddgs==9.5.1",
 ]
 
 [dependency-groups]
@@ -34,8 +36,11 @@ dev = [
     "pytest==8.4.1",
     "pytest-asyncio==1.1.0",
     "ruff==0.12.7",
-    "ty==0.0.1a16",
 ]
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.uv]
+add-bounds = "exact"
+index-strategy = "unsafe-best-match"
