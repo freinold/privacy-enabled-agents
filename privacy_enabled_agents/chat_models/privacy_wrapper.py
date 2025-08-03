@@ -1,5 +1,5 @@
 from json import dumps, loads
-from typing import Any, Callable, Dict, Optional, Sequence, TypedDict, cast
+from typing import Any, Callable, Dict, Sequence, TypedDict, cast
 from uuid import UUID, uuid4
 
 from langchain_core.callbacks import CallbackManagerForLLMRun
@@ -16,6 +16,14 @@ from privacy_enabled_agents.detection.base import BaseDetector
 from privacy_enabled_agents.replacement.base import BaseReplacer
 
 
+# Local class to define the input structure for the replace function
+class ReplaceInput(TypedDict):
+    """Input for the replace function."""
+
+    messages: list[BaseMessage]
+    detector_outputs_by_uuid: dict[str, list[Entity]]
+
+
 class PrivacyEnabledChatModel(BaseChatModel):
     """Wraps a chat model to add privacy features."""
 
@@ -24,26 +32,23 @@ class PrivacyEnabledChatModel(BaseChatModel):
     detector: BaseDetector = Field(description="Detector to use for identifying sensitive information.")
     context_id: UUID = Field(description="The context ID for the chat model.", default_factory=uuid4)
 
-    # Local class to define the input structure for the replace function
-    class ReplaceInput(TypedDict):
-        """Input for the replace function."""
-
-        messages: list[BaseMessage]
-        detector_outputs_by_uuid: dict[str, list[Entity]]
-
     def _generate(
         self,
         messages: list[BaseMessage],
-        stop: Optional[list[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> ChatResult:
         # Detect sensitive information in the messages
-        detect_runnable = RunnableLambda(self._detect_entities)
+        detect_runnable: RunnableLambda[list[BaseMessage], tuple[list[BaseMessage], dict[str, list[Entity]]]] = RunnableLambda(
+            self._detect_entities
+        )
+        transformed_messages: list[BaseMessage]
+        detector_outputs_by_uuid: dict[str, list[Entity]]
         transformed_messages, detector_outputs_by_uuid = detect_runnable.invoke(input=messages, **kwargs)
 
         # Replace sensitive information with placeholders
-        replace_runnable = RunnableLambda(self._replace_entities)
+        replace_runnable: RunnableLambda[ReplaceInput, list[BaseMessage]] = RunnableLambda(self._replace_entities)
         replaced_messages: list[BaseMessage] = replace_runnable.invoke(
             input={
                 "messages": transformed_messages,
@@ -60,7 +65,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
         )
 
         # Restore the original text in the response
-        restore_runnable = RunnableLambda(self._restore_entities)
+        restore_runnable: RunnableLambda[BaseMessage, BaseMessage] = RunnableLambda(self._restore_entities)
         restored_output: BaseMessage = restore_runnable.invoke(input=censored_output, **kwargs)
 
         # Create a ChatGeneration object with the restored output
@@ -154,7 +159,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
         """
 
         replaced_messages: list[BaseMessage] = []
-        detector_outputs_by_uuid = input.get("detector_outputs_by_uuid", {})
+        detector_outputs_by_uuid: dict[str, list[Entity]] = input.get("detector_outputs_by_uuid", {})
         for message in input.get("messages", []):
             # Copy the message to avoid modifying the original
             replaced_message: BaseMessage = message.model_copy()
