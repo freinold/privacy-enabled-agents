@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, List, Tuple
+from collections.abc import Iterator
 from uuid import UUID
 
 from cryptography.fernet import Fernet
@@ -30,7 +30,7 @@ class EncryptionStorage(BaseStorage):
         # Create a fernet object using the context_id as key
         fernet = Fernet(key=context_id.bytes)
         # Encrypt the text
-        encrypted_text = fernet.encrypt(text.encode())
+        encrypted_text: bytes = fernet.encrypt(text.encode())
         # Store the encrypted text in the storage
         self._storage.setdefault(context_id, []).append(encrypted_text.decode())
         # Return the encrypted text as a string
@@ -48,19 +48,19 @@ class EncryptionStorage(BaseStorage):
     def exists(self, replacement: str, context_id: UUID) -> bool:
         raise NotImplementedError("EncryptionStorage does not support exists operation.")
 
-    def list_replacements(self, context_id: UUID) -> List[str]:
+    def list_replacements(self, context_id: UUID) -> list[str]:
         return self._storage.get(context_id, [])
 
-    def get_all_context_data(self, context_id: UUID) -> Dict[str, Tuple[str, str]]:
+    def get_all_context_data(self, context_id: UUID) -> dict[str, tuple[str, str]]:
         raise NotImplementedError("EncryptionStorage does not support get_all_context_data operation.")
 
-    def get_stats(self) -> Dict[str, int]:
+    def get_stats(self) -> dict[str, int]:
         return {
             "total_contexts": len(self._storage),
             "total_replacements": sum(len(replacements) for replacements in self._storage.values()),
         }
 
-    def iterate_entries(self, context_id: UUID | None = None) -> Iterator[Tuple[str, str, str, UUID]]:
+    def iterate_entries(self, context_id: UUID | None = None) -> Iterator[tuple[str, str, str, UUID]]:
         for context_id, replacements in self._storage.items():
             for replacement in replacements:
                 yield (replacement, "unknown", "unknown", context_id)
