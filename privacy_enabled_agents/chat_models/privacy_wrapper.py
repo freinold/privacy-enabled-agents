@@ -1,5 +1,6 @@
+from collections.abc import Callable, Sequence
 from json import dumps, loads
-from typing import Any, Callable, Dict, Sequence, TypedDict, cast
+from typing import Any, TypedDict, cast
 from uuid import UUID, uuid4
 
 from langchain_core.callbacks import CallbackManagerForLLMRun
@@ -81,7 +82,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
         return dict(self.chat_model._identifying_params)
 
     def bind_tools(
-        self, tools: Sequence[Dict[str, Any] | type | Callable[..., Any] | BaseTool], *, tool_choice: str | None = None, **kwargs: Any
+        self, tools: Sequence[dict[str, Any] | type | Callable[..., Any] | BaseTool], *, tool_choice: str | None = None, **kwargs: Any
     ) -> Runnable[PromptValue | str | Sequence[BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]], BaseMessage]:
         self.chat_model = cast("BaseChatModel", self.chat_model.bind_tools(tools, tool_choice=tool_choice, **kwargs))
         return self
