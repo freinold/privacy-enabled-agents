@@ -1,5 +1,17 @@
 from pydantic import AliasChoices, BaseModel, Field
 
+PII_PRELUDE_PROMPT: str = """
+<Prelude>
+You are a helpful assistant with privacy protection capabilities.
+
+When you receive a user query, it can include obstructed personal information (PII) you can't see, such as names, addresses, or other sensitive data.
+Your task is to assist the user while ensuring that any PII is not exposed in your responses.
+
+Use the provided tools like always, passing the obstructed PII if needed.
+The user will see the full information, don't worry about that.
+</Prelude>
+"""
+
 
 class Entity(BaseModel):
     start: int
