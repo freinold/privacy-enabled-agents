@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Iterator, List, Optional, Tuple
+from collections.abc import Iterator
 from uuid import UUID
 
 
@@ -36,7 +36,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def get_text(self, replacement: str, context_id: UUID) -> Optional[tuple[str, str]]:
+    def get_text(self, replacement: str, context_id: UUID) -> tuple[str, str] | None:
         """
         Retrieves the original text and label of the given replacement.
 
@@ -50,7 +50,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def get_replacement(self, text: str, context_id: UUID) -> Optional[str]:
+    def get_replacement(self, text: str, context_id: UUID) -> str | None:
         """
         Retrieves the replacement for the given text. If there is no replacement, return None.
 
@@ -103,7 +103,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def list_replacements(self, context_id: UUID) -> List[str]:
+    def list_replacements(self, context_id: UUID) -> list[str]:
         """
         Lists all replacements for a specific context.
 
@@ -116,7 +116,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def get_all_context_data(self, context_id: UUID) -> Dict[str, Tuple[str, str]]:
+    def get_all_context_data(self, context_id: UUID) -> dict[str, tuple[str, str]]:
         """
         Gets all data for a specific context.
 
@@ -129,7 +129,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def get_stats(self) -> Dict[str, int]:
+    def get_stats(self) -> dict[str, int]:
         """
         Gets statistics about the storage.
 
@@ -139,7 +139,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def iterate_entries(self, context_id: Optional[UUID] = None) -> Iterator[Tuple[str, str, str, UUID]]:
+    def iterate_entries(self, context_id: UUID | None = None) -> Iterator[tuple[str, str, str, UUID]]:
         """
         Iterates through all entries in the storage.
 
