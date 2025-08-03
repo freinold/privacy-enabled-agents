@@ -7,10 +7,10 @@ services:
       - "6379:6379"
     volumes:
       - ./valkey-data:/data:rw
-    command: ["--appendonly", "yes"] # Enable data persistence
+    command: [ "--appendonly", "yes" ] # Enable data persistence
     restart: on-failure
     healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
+      test: [ "CMD", "valkey-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -40,7 +40,7 @@ services:
     tty: true
     volumes:
       - "${HOME}/.cache/huggingface:/app/huggingface:rw"
-      - "./gliner-api-configs/general.yaml:/app/config.yaml:ro"
+      - "./gliner-api-configs/pii+phi_quantized.yaml:/app/config.yaml:ro"
     environment: []
 
 networks:
