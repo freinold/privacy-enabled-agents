@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Literal
+from typing import Literal
 from uuid import UUID
 
 from pydantic import Field
@@ -98,7 +98,7 @@ class BaseReplacer(ABC):
             str: The text with the entities restored.
         """
         # Get all replacements for the context_id
-        replacements: List[str] = self.storage.list_replacements(context_id=context_id)
+        replacements: list[str] = self.storage.list_replacements(context_id=context_id)
 
         # Restore the text by replacing placeholders with original text
         for replacement in replacements:
