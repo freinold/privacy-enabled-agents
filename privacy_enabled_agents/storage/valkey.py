@@ -1,5 +1,5 @@
 import json
-from typing import AsyncIterator, Dict, List, Optional, Tuple
+from collections.abc import Iterator
 from uuid import UUID
 
 from valkey import Valkey
@@ -53,7 +53,7 @@ class ValkeyStorage(BaseStorage):
 
     def put(self, text: str, label: str, replacement: str, context_id: UUID) -> None:
         # Create a JSON string with the original text and label
-        data = json.dumps({"text": text, "label": label})
+        data: str = json.dumps({"text": text, "label": label})
 
         # Use a pipeline for atomic operations
         with self.client.pipeline() as pipe:
@@ -70,21 +70,21 @@ class ValkeyStorage(BaseStorage):
 
     def inc_label_counter(self, label: str, context_id: UUID) -> int:
         # Increment the label counter and get the new value
-        new_value = self.client.incr(self._label_counter_key(context_id, label))
+        new_value: int = self.client.incr(self._label_counter_key(context_id, label))  # type: ignore
         return new_value
 
     def get_text(self, replacement: str, context_id: UUID) -> tuple[str, str]:
-        data = self.client.get(self._replacement_key(context_id, replacement))
-        if not data:
+        data: str | None = self.client.get(self._replacement_key(context_id, replacement))  # type: ignore
+        if data is None:
             raise ValueError(f"Replacement '{replacement}' not found in context {context_id}")
 
         # Parse the JSON string to get the original text and label
         parsed_data = json.loads(data)
         return parsed_data["text"], parsed_data["label"]
 
-    def get_replacement(self, text: str, context_id: UUID) -> Optional[str]:
+    def get_replacement(self, text: str, context_id: UUID) -> str | None:
         # Use the reverse lookup index to directly get the replacement
-        replacement = self.client.hget(self._text_to_replacement_key(context_id), text)
+        replacement: bytes | None = self.client.hget(self._text_to_replacement_key(context_id), text)  # type: ignore
         if replacement:
             return replacement.decode("utf-8")
         return None
@@ -95,8 +95,11 @@ class ValkeyStorage(BaseStorage):
             raise ValueError(f"Replacement '{replacement}' not found in context {context_id}")
 
         # Get the original text to remove from the reverse index
-        data = self.client.get(self._replacement_key(context_id, replacement))
-        original_text = json.loads(data)["text"] if data else None
+        data: str | None = self.client.get(self._replacement_key(context_id, replacement))  # type: ignore
+        if data is None:
+            raise ValueError(f"Replacement '{replacement}' not found in context {context_id}")
+        # Parse the JSON to get the original text
+        original_text: str | None = json.loads(data)["text"] if data else None
 
         # Use a pipeline for atomic operations
         with self.client.pipeline() as pipe:
@@ -110,10 +113,10 @@ class ValkeyStorage(BaseStorage):
             # Execute all commands
             pipe.execute()
 
-    def clear(self, context_id: UUID = None) -> None:
+    def clear(self, context_id: UUID | None = None) -> None:
         if context_id is not None:
             # Clear only the specified context
-            replacements = self.list_replacements(context_id)
+            replacements: list[str] = self.list_replacements(context_id)
             if replacements:
                 # Use a pipeline for efficient deletion
                 with self.client.pipeline() as pipe:
@@ -131,9 +134,9 @@ class ValkeyStorage(BaseStorage):
                     pipe.execute()
         else:
             # Clear all data - get all contexts first
-            contexts_data = self.client.smembers("ctxs")
+            contexts_data: set[bytes] | None = self.client.smembers("ctxs")  # type: ignore
             if contexts_data:
-                contexts = [UUID(c.decode("utf-8")) for c in contexts_data]
+                contexts: list[UUID] = [UUID(c.decode("utf-8")) for c in contexts_data]
 
                 # Use a pipeline for efficient deletion
                 with self.client.pipeline() as pipe:
@@ -153,14 +156,14 @@ class ValkeyStorage(BaseStorage):
     def exists(self, replacement: str, context_id: UUID) -> bool:
         return bool(self.client.exists(self._replacement_key(context_id, replacement)))
 
-    def list_replacements(self, context_id: UUID) -> List[str]:
-        replacements = self.client.smembers(self._replacements_set_key(context_id))
+    def list_replacements(self, context_id: UUID) -> list[str]:
+        replacements: set[bytes] | None = self.client.smembers(self._replacements_set_key(context_id))  # type: ignore
         # Convert from bytes to string
         return [r.decode("utf-8") for r in replacements] if replacements else []
 
-    def get_all_context_data(self, context_id: UUID) -> Dict[str, Tuple[str, str]]:
-        result = {}
-        replacements = self.list_replacements(context_id)
+    def get_all_context_data(self, context_id: UUID) -> dict[str, tuple[str, str]]:
+        result: dict[str, tuple[str, str]] = {}
+        replacements: list[str] = self.list_replacements(context_id)
 
         if replacements:
             # Use a pipeline for batch retrieval
@@ -168,40 +171,42 @@ class ValkeyStorage(BaseStorage):
                 for replacement in replacements:
                     pipe.get(self._replacement_key(context_id, replacement))
 
-                values = pipe.execute()
+                values: list[str | None] = pipe.execute()
 
-                for i, replacement in enumerate(replacements):
-                    if values[i]:
-                        data = json.loads(values[i])
-                        result[replacement] = (data["text"], data["label"])
+            for i, replacement in enumerate(replacements):
+                if values[i] is not None:
+                    data: dict[str, str] = json.loads(values[i])  # type: ignore
+                    result[replacement] = (data["text"], data["label"])
 
         return result
 
-    def get_stats(self) -> Dict[str, int]:
-        stats = {}
+    def get_stats(self) -> dict[str, int]:
+        stats: dict[str, int] = {}
 
         # Get count of contexts
-        contexts_data = self.client.smembers("ctxs")
-        num_contexts = len(contexts_data) if contexts_data else 0
+        contexts_data: set[bytes] | None = self.client.smembers("ctxs")  # type: ignore
+        num_contexts: int = len(contexts_data) if contexts_data is not None else 0
         stats["contexts"] = num_contexts
 
         # Get count of entries across all contexts
-        total_entries = 0
-        if contexts_data:
+        total_entries: int = 0
+        if contexts_data is not None:
             for context_id_bytes in contexts_data:
                 context_id = UUID(context_id_bytes.decode("utf-8"))
-                replacements = self.list_replacements(context_id)
+                replacements: list[str] = self.list_replacements(context_id)
                 total_entries += len(replacements)
 
         stats["total_entries"] = total_entries
         return stats
 
-    def iterate_entries(self, context_id: Optional[UUID] = None) -> AsyncIterator[Tuple[str, str, str, UUID]]:
+    def iterate_entries(self, context_id: UUID | None = None) -> Iterator[tuple[str, str, str, UUID]]:
         if context_id is not None:
             # Iterate through entries for a specific context
-            replacements = self.list_replacements(context_id)
+            replacements: list[str] = self.list_replacements(context_id)
             for replacement in replacements:
                 try:
+                    text: str
+                    label: str
                     text, label = self.get_text(replacement, context_id)
                     yield (text, label, replacement, context_id)
                 except ValueError:
@@ -209,8 +214,8 @@ class ValkeyStorage(BaseStorage):
                     continue
         else:
             # Iterate through entries for all contexts
-            contexts_data = self.client.smembers("contexts")
-            if contexts_data:
+            contexts_data: set[bytes] | None = self.client.smembers("contexts")  # type: ignore
+            if contexts_data is not None:
                 for context_id_bytes in contexts_data:
                     ctx_id = UUID(context_id_bytes.decode("utf-8"))
                     for entry in self.iterate_entries(ctx_id):
