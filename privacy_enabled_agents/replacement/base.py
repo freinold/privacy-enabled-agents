@@ -4,8 +4,8 @@ from uuid import UUID
 
 from pydantic import Field
 
-from privacy_enabled_agents.base import Entity
-from privacy_enabled_agents.storage.base import BaseStorage
+from privacy_enabled_agents import Entity
+from privacy_enabled_agents.storage import BaseEntityStorage
 
 
 class BaseReplacer(ABC):
@@ -15,13 +15,13 @@ class BaseReplacer(ABC):
     Provides a common interface for all replacement techniques.
     """
 
-    storage: BaseStorage
+    storage: BaseEntityStorage
     _supported_entities: set[str] | Literal["ANY"] = Field(
         default="ANY",
         description="Supported entities for the replacer.",
     )
 
-    def __init__(self, storage: BaseStorage) -> None:
+    def __init__(self, storage: BaseEntityStorage) -> None:
         self.storage = storage
 
     def get_supported_entities(self) -> set[str] | Literal["ANY"]:
@@ -48,14 +48,14 @@ class BaseReplacer(ABC):
             return True
         return all(entity.label in self._supported_entities for entity in entities)
 
-    def replace(self, text: str, entities: list[Entity], context_id: UUID) -> str:
+    def replace(self, text: str, entities: list[Entity], thread_id: UUID) -> str:
         """
         Replaces the given entities in the text.
 
         Args:
             text (str): The text to be processed.
             entities (list[Entity]): The entities to be replaced.
-            context_id (UUID): The context ID for the replacement process.
+            thread_id (UUID): The context ID for the replacement process.
 
         Returns:
             str: The text with the entities replaced.
@@ -66,18 +66,18 @@ class BaseReplacer(ABC):
             # Get the replacement for the entity
             replacement: str | None = self.storage.get_replacement(
                 text=entity.text,
-                context_id=context_id,
+                thread_id=thread_id,
             )
 
             # If the replacement is not found, create a new one
             if replacement is None:
                 # Create a new replacement and store it
-                replacement = self.create_replacement(entity=entity, context_id=context_id)
+                replacement = self.create_replacement(entity=entity, thread_id=thread_id)
                 self.storage.put(
                     text=entity.text,
                     label=entity.label,
                     replacement=replacement,
-                    context_id=context_id,
+                    thread_id=thread_id,
                 )
 
             # Replace the entity in the text
@@ -86,37 +86,41 @@ class BaseReplacer(ABC):
 
         return text
 
-    def restore(self, text: str, context_id: UUID) -> str:
+    def restore(self, text: str, thread_id: UUID) -> str:
         """
         Restores the replaced entities in the text.
 
         Args:
             text (str): The text to be processed.
-            context_id (UUID): The context ID for the restoration process.
+            thread_id (UUID): The context ID for the restoration process.
 
         Returns:
             str: The text with the entities restored.
         """
-        # Get all replacements for the context_id
-        replacements: list[str] = self.storage.list_replacements(context_id=context_id)
+        # Get all replacements for the thread_id
+        replacements: list[str] = self.storage.list_replacements(thread_id=thread_id)
+
+        # Sort replacements by length (descending) to handle substring issues
+        # e.g., <PERSON-10> should be processed before <PERSON-1>
+        replacements.sort(key=len, reverse=True)
 
         # Restore the text by replacing placeholders with original text
         for replacement in replacements:
             if replacement in text:
-                original_text: tuple[str, str] | None = self.storage.get_text(replacement, context_id)
+                original_text: tuple[str, str] | None = self.storage.get_text(replacement, thread_id)
                 if original_text:
                     text = text.replace(replacement, original_text[0])
 
         return text
 
     @abstractmethod
-    def create_replacement(self, entity: Entity, context_id: UUID) -> str:
+    def create_replacement(self, entity: Entity, thread_id: UUID) -> str:
         """
         Creates a replacement for the given entity, based on the entity's label and the context ID to ensure uniqueness.
 
         Args:
             entity (Entity): The entity to be replaced.
-            context_id (UUID): The context ID for the replacement process.
+            thread_id (UUID): The context ID for the replacement process.
 
         Returns:
             str: The replacement for the entity.

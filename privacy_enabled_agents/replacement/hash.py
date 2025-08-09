@@ -12,5 +12,5 @@ class HashReplacer(BaseReplacer):
 
     _supported_entities: set[str] | Literal["ANY"] = "ANY"  # Allow all entities
 
-    def create_replacement(self, entity: Entity, context_id: UUID) -> str:
-        return hex(hash(entity.text + str(context_id)))
+    def create_replacement(self, entity: Entity, thread_id: UUID) -> str:
+        return hex(hash(entity.text + str(thread_id)))

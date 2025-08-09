@@ -6,7 +6,7 @@ from faker import Faker
 
 from privacy_enabled_agents.base import Entity
 from privacy_enabled_agents.replacement.base import BaseReplacer
-from privacy_enabled_agents.storage.base import BaseStorage
+from privacy_enabled_agents.storage.entity import BaseEntityStorage
 
 
 class PseudonymReplacer(BaseReplacer):
@@ -24,7 +24,7 @@ class PseudonymReplacer(BaseReplacer):
         "location",
     }
 
-    def __init__(self, storage: BaseStorage, locale: str | Sequence[str] = "de_DE") -> None:
+    def __init__(self, storage: BaseEntityStorage, locale: str | Sequence[str] = "de_DE") -> None:
         super().__init__(storage)
         self.faker = Faker(locale=locale)
 
@@ -38,12 +38,12 @@ class PseudonymReplacer(BaseReplacer):
             "location": lambda: self.faker.city(),
         }
 
-    def create_replacement(self, entity: Entity, context_id: UUID) -> str:
+    def create_replacement(self, entity: Entity, thread_id: UUID) -> str:
         if entity.label not in self.replacement_map:
             raise ValueError(f"Unsupported entity type: {entity.label}")
 
         # Seed the faker instance with the context ID to ensure reproducibility as well as uniqueness between different contexts
-        self.faker.seed_instance(context_id.int)
+        self.faker.seed_instance(thread_id.int)
 
         # Get the replacement function based on the entity label
         replacement_function: Callable[[], str] = self.replacement_map[entity.label]

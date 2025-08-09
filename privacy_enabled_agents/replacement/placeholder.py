@@ -12,7 +12,7 @@ class PlaceholderReplacer(BaseReplacer):
 
     _supported_entities: set[str] | Literal["ANY"] = "ANY"  # Allow all entities
 
-    def create_replacement(self, entity: Entity, context_id: UUID) -> str:
+    def create_replacement(self, entity: Entity, thread_id: UUID) -> str:
         formatted_label: str = entity.label.replace(" ", "_").upper()
-        counter: int = self.storage.inc_label_counter(formatted_label, context_id)
-        return f"<{formatted_label}-{counter}>"
+        counter: int = self.storage.inc_label_counter(formatted_label, thread_id)
+        return f"[{formatted_label}_{counter:02d}]"

@@ -10,5 +10,5 @@ class MockEncryptionReplacer(BaseReplacer):
 
     _supported_entities: set[str] | Literal["ANY"] = "ANY"  # Allow all entities  # noqa: F821
 
-    def create_replacement(self, entity: Entity, context_id: UUID) -> str:
+    def create_replacement(self, entity: Entity, thread_id: UUID) -> str:
         raise NotImplementedError("MockEncryptionReplacer does not support create_replacement operation.")
