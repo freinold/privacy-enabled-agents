@@ -5,11 +5,7 @@ from typing import Any, Literal
 from langchain_core.runnables import RunnableConfig, RunnableSerializable
 from pydantic import Field
 
-from privacy_enabled_agents.base import Entity
-
-
-class DetectionValidationException(Exception):
-    """Exception raised when the input text is invalid."""
+from privacy_enabled_agents import Entity
 
 
 class BaseDetector(RunnableSerializable[str, list[Entity]], ABC):

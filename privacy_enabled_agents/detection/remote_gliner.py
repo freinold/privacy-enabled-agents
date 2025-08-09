@@ -7,8 +7,8 @@ from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 from stamina import retry
 
-from privacy_enabled_agents.base import Entity
-from privacy_enabled_agents.detection.base import BaseDetector
+from privacy_enabled_agents import Entity
+from privacy_enabled_agents.detection import BaseDetector
 
 logger: Logger = getLogger(__name__)
 

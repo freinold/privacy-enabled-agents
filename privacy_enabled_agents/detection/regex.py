@@ -3,8 +3,8 @@ from typing import Any, Literal
 
 from langchain_core.runnables.config import RunnableConfig
 
-from privacy_enabled_agents.base import Entity
-from privacy_enabled_agents.detection.base import BaseDetector
+from privacy_enabled_agents import Entity
+from privacy_enabled_agents.detection import BaseDetector
 
 
 class RegexDetector(BaseDetector):
