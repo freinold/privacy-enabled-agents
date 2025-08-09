@@ -5,6 +5,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 
+from privacy_enabled_agents import PrivacyEnabledAgentState
 from privacy_enabled_agents.base import PII_PRELUDE_PROMPT
 from privacy_enabled_agents.examples.websearch.tools import SearchWebTool
 
@@ -36,6 +37,7 @@ def create_websearch_agent(
         tools=tools,
         prompt=prompt,
         checkpointer=checkpointer,
+        state_schema=PrivacyEnabledAgentState,
     ).with_config(config=runnable_config)
 
     return agent

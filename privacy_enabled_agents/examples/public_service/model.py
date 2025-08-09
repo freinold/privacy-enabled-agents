@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Literal, TypedDict
 
-from langgraph.prebuilt.chat_agent_executor import AgentStatePydantic
 from pydantic import Field
+
+from privacy_enabled_agents import PrivacyEnabledAgentState
 
 
 class Citizen(TypedDict):
@@ -79,7 +80,7 @@ def create_initial_parking_permits() -> dict[str, ParkingPermit]:
     }
 
 
-class PublicServiceState(AgentStatePydantic):
+class PublicServiceState(PrivacyEnabledAgentState):
     """State for the public service agent."""
 
     citizens: dict[str, Citizen] = Field(

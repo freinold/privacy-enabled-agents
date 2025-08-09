@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import TypedDict
 
-from langgraph.prebuilt.chat_agent_executor import AgentStatePydantic
 from pydantic import Field
+
+from privacy_enabled_agents import PrivacyEnabledAgentState
 
 
 class Account(TypedDict):
@@ -37,7 +38,7 @@ def create_initial_accounts() -> dict[str, Account]:
     }
 
 
-class FinanceState(AgentStatePydantic):
+class FinanceState(PrivacyEnabledAgentState):
     """State for the finance agent."""
 
     accounts: dict[str, Account] = Field(

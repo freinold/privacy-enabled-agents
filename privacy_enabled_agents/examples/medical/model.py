@@ -1,10 +1,10 @@
 from datetime import date
 from typing import Literal
 
-from langgraph.prebuilt.chat_agent_executor import AgentStatePydantic
 from pydantic import BaseModel, Field
 from pydantic_extra_types.coordinate import Coordinate
 
+from privacy_enabled_agents import PrivacyEnabledAgentState
 from privacy_enabled_agents.custom_types.german_medical_insurance_id import GermanMedicalInsuranceID
 
 
@@ -74,7 +74,7 @@ def create_medical_facilities() -> list[MedicalFacility]:
     ]
 
 
-class MedicalState(AgentStatePydantic):
+class MedicalState(PrivacyEnabledAgentState):
     """State for the medical agent."""
 
     facilities: list[MedicalFacility] = Field(

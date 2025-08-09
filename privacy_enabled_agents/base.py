@@ -1,3 +1,5 @@
+from langchain_core.messages import BaseMessage
+from langgraph.prebuilt.chat_agent_executor import AgentStatePydantic
 from pydantic import AliasChoices, BaseModel, Field
 
 PII_PRELUDE_PROMPT: str = """
@@ -27,3 +29,11 @@ class UnsupportedEntityException(Exception):
     def __init__(self, entity: str):
         super().__init__(f"Unsupported entity: {entity}")
         self.entity = entity
+
+
+class PrivacyEnabledAgentState(AgentStatePydantic):
+    """State for the basic agent with privacy features."""
+
+    privacy_protected_messages: list[BaseMessage] = Field(
+        default_factory=list, description="Messages with PII/PHI replaced - what the LLM actually is given"
+    )
