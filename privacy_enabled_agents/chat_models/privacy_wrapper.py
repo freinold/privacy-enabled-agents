@@ -1,6 +1,8 @@
+import logging
 from collections.abc import Callable, Sequence
+from hashlib import md5
 from json import dumps, loads
-from typing import Any, TypedDict, cast
+from typing import Any, TypedDict, cast, override
 from uuid import UUID, uuid4
 
 from langchain_core.callbacks import CallbackManagerForLLMRun
@@ -8,13 +10,17 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolCall
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.prompt_values import PromptValue
-from langchain_core.runnables import Runnable, RunnableLambda
+from langchain_core.runnables import Runnable, RunnableConfig, RunnableLambda
 from langchain_core.tools import BaseTool
 from pydantic import Field
 
-from privacy_enabled_agents.base import Entity
-from privacy_enabled_agents.detection.base import BaseDetector
-from privacy_enabled_agents.replacement.base import BaseReplacer
+from privacy_enabled_agents import Entity
+from privacy_enabled_agents.detection import BaseDetector
+from privacy_enabled_agents.replacement import BaseReplacer
+from privacy_enabled_agents.storage import BaseConversationStorage
+
+# Create logger for this module
+logger = logging.getLogger(__name__)
 
 
 # Local class to define the input structure for the replace function
@@ -23,6 +29,7 @@ class ReplaceInput(TypedDict):
 
     messages: list[BaseMessage]
     detector_outputs_by_uuid: dict[str, list[Entity]]
+    thread_id: UUID
 
 
 class PrivacyEnabledChatModel(BaseChatModel):
@@ -31,7 +38,30 @@ class PrivacyEnabledChatModel(BaseChatModel):
     chat_model: BaseChatModel = Field(alias="model", description="The chat model to wrap.")
     replacer: BaseReplacer = Field(description="Replacer to use for substituting sensitive information.")
     detector: BaseDetector = Field(description="Detector to use for identifying sensitive information.")
-    context_id: UUID = Field(description="The context ID for the chat model.", default_factory=uuid4)
+    conversation_storage: BaseConversationStorage | None = Field(
+        default=None, description="Storage for privacy-protected conversation messages."
+    )
+
+    def _get_thread_id(self, **kwargs: Any) -> str | None:
+        """Extract thread_id from kwargs."""
+        logger.debug(f"_get_thread_id called with kwargs keys: {list(kwargs.keys())}")
+
+        # Check if thread_id was passed directly as a kwarg
+        thread_id: str | None = kwargs.get("thread_id")
+        logger.debug(f"extracted thread_id from kwargs: {thread_id}")
+
+        return thread_id
+
+    def _string_to_uuid(self, string: str | None) -> UUID | None:
+        """Extract thread_id from kwargs config and convert to UUID."""
+        if string is None:
+            return None
+
+        try:
+            return UUID(string)
+        except ValueError:
+            # If string is not a valid UUID, generate one from it
+            return UUID(md5(string.encode()).hexdigest())
 
     def _generate(
         self,
@@ -40,42 +70,171 @@ class PrivacyEnabledChatModel(BaseChatModel):
         run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> ChatResult:
-        # Detect sensitive information in the messages
-        detect_runnable: RunnableLambda[list[BaseMessage], tuple[list[BaseMessage], dict[str, list[Entity]]]] = RunnableLambda(
-            self._detect_entities
-        )
-        transformed_messages: list[BaseMessage]
-        detector_outputs_by_uuid: dict[str, list[Entity]]
-        transformed_messages, detector_outputs_by_uuid = detect_runnable.invoke(input=messages, **kwargs)
+        # Extract thread_id from kwargs config
+        thread_id: str | None = self._get_thread_id(**kwargs)
+        thread_id_uuid: UUID | None = self._string_to_uuid(thread_id)
 
-        # Replace sensitive information with placeholders
-        replace_runnable: RunnableLambda[ReplaceInput, list[BaseMessage]] = RunnableLambda(self._replace_entities)
-        replaced_messages: list[BaseMessage] = replace_runnable.invoke(
-            input={
-                "messages": transformed_messages,
-                "detector_outputs_by_uuid": detector_outputs_by_uuid,
-            },
-            **kwargs,
-        )
+        if thread_id_uuid is None:
+            logger.debug("No thread_id provided, doing one-time detection and replacement")
+            thread_id_uuid = uuid4()
+
+        if thread_id is None:
+            thread_id = str(thread_id_uuid)  # Use the UUID as the thread_id if not provided
+
+        # Filter out thread_id from kwargs for lambda functions
+        filtered_kwargs: dict[str, Any] = {k: v for k, v in kwargs.items() if k != "thread_id"}
+
+        # Get existing privacy-protected messages from storage
+        existing_protected_messages: list[BaseMessage] = []
+        if self.conversation_storage and thread_id_uuid:
+            existing_protected_messages = self.conversation_storage.get_encrypted_messages(thread_id=thread_id_uuid)
+            logger.debug(f"Retrieved {len(existing_protected_messages)} existing protected messages")
+
+        # Determine which messages are new (not in storage)
+        # Since messages always contain the complete history, new messages are at the end
+        new_messages: list[BaseMessage] = []
+        num_protected_messages: int = len(existing_protected_messages)
+        if num_protected_messages < len(messages):
+            # New messages are at the end of the list
+            new_messages = messages[num_protected_messages:]
+            logger.debug(f"Identified {len(new_messages)} new messages to process")
+        else:
+            # If storage has same or more messages, no new messages to process
+            logger.debug("No new messages to process")
+
+        # Only process new messages for detection and replacement
+        new_transformed_messages: list[BaseMessage] = []
+        new_replaced_messages: list[BaseMessage] = []
+
+        if len(new_messages) > 0:
+            # Detect sensitive information in new messages only
+            detect_runnable: RunnableLambda[list[BaseMessage], tuple[list[BaseMessage], dict[str, list[Entity]]]] = RunnableLambda(
+                self._detect_entities
+            )
+            detector_outputs_by_uuid: dict[str, list[Entity]]
+            new_transformed_messages, detector_outputs_by_uuid = detect_runnable.invoke(input=new_messages, **filtered_kwargs)
+
+            # Replace sensitive information with placeholders in new messages only
+            replace_runnable: RunnableLambda[ReplaceInput, list[BaseMessage]] = RunnableLambda(self._replace_entities)
+            new_replaced_messages = replace_runnable.invoke(
+                input={
+                    "messages": new_transformed_messages,
+                    "detector_outputs_by_uuid": detector_outputs_by_uuid,
+                    "thread_id": thread_id_uuid,
+                },
+                **filtered_kwargs,
+            )
+
+        # Combine existing protected messages with newly processed messages
+        all_replaced_messages: list[BaseMessage] = existing_protected_messages + new_replaced_messages
 
         # Generate a response using the chat model
         censored_output: BaseMessage = self.chat_model.invoke(
-            input=replaced_messages,
+            input=all_replaced_messages,
             stop=stop,
-            **kwargs,
+            **filtered_kwargs,
         )
 
+        # Store privacy-protected messages in conversation storage if available
+        if self.conversation_storage and thread_id and thread_id_uuid and new_replaced_messages:
+            # Only store the new messages and the LLM response
+            new_privacy_protected_messages: list[BaseMessage] = new_replaced_messages + [censored_output]
+            logger.info(f"Storing {len(new_privacy_protected_messages)} new messages for thread_id {thread_id_uuid}")
+            self.conversation_storage.store_encrypted_messages(thread_id=thread_id_uuid, messages=new_privacy_protected_messages)
+            logger.debug("Successfully stored new messages")
+        elif not new_replaced_messages:
+            logger.debug("No new messages to store")
+        else:
+            logger.debug(
+                f"Not storing messages - conversation_storage: {self.conversation_storage is not None}, thread_id: {thread_id}, thread_id_uuid: {thread_id_uuid}"
+            )
+
         # Restore the original text in the response
-        restore_runnable: RunnableLambda[BaseMessage, BaseMessage] = RunnableLambda(self._restore_entities)
-        restored_output: BaseMessage = restore_runnable.invoke(input=censored_output, **kwargs)
+        restore_runnable: RunnableLambda[BaseMessage, BaseMessage] = RunnableLambda(lambda msg: self._restore_entities(msg, thread_id_uuid))
+        restored_output: BaseMessage = restore_runnable.invoke(input=censored_output, **filtered_kwargs)
 
         # Create a ChatGeneration object with the restored output
         generation = ChatGeneration(message=restored_output)
         return ChatResult(generations=[generation], llm_output={})
 
+    def get_encrypted_messages(self, thread_id: str | None = None, limit: int | None = None) -> list[BaseMessage]:
+        """Retrieve encrypted messages from conversation storage.
+
+        Args:
+            thread_id: Optional thread ID - if not provided, no messages will be returned
+            limit: Maximum number of recent messages to retrieve
+
+        Returns:
+            List of encrypted messages with placeholders
+        """
+        logger.debug(f"get_encrypted_messages called with thread_id: {thread_id}")
+
+        if not self.conversation_storage or not thread_id:
+            logger.debug(f"Early return - conversation_storage: {self.conversation_storage is not None}, thread_id: {thread_id}")
+            return []
+
+        # Convert thread_id to UUID
+        try:
+            thread_id_uuid = UUID(thread_id)
+        except ValueError:
+            # If thread_id is not a valid UUID, generate one from it
+            import hashlib
+
+            thread_id_uuid = UUID(hashlib.md5(thread_id.encode()).hexdigest())
+
+        logger.debug(f"Converted thread_id to UUID: {thread_id_uuid}")
+
+        messages = self.conversation_storage.get_encrypted_messages(thread_id=thread_id_uuid, limit=limit)
+        logger.debug(f"Retrieved {len(messages)} messages from storage")
+
+        return messages
+
+    def clear_conversation(self, thread_id: str | None = None) -> None:
+        """Clear all encrypted messages for the specified thread.
+
+        Args:
+            thread_id: Thread ID to clear messages for
+        """
+        if not self.conversation_storage or not thread_id:
+            return
+
+        # Convert thread_id to UUID
+        try:
+            thread_id_uuid = UUID(thread_id)
+        except ValueError:
+            # If thread_id is not a valid UUID, generate one from it
+            import hashlib
+
+            thread_id_uuid = UUID(hashlib.md5(thread_id.encode()).hexdigest())
+
+        self.conversation_storage.clear_conversation(thread_id=thread_id_uuid)
+
     @property
     def _llm_type(self) -> str:
         return f"privacy-enabled-{self.chat_model._llm_type}"
+
+    @override
+    def invoke(
+        self,
+        input: Any,
+        config: RunnableConfig | None = None,
+        *,
+        stop: list[str] | None = None,
+        **kwargs: Any,
+    ) -> BaseMessage:
+        """Override invoke to extract thread_id from config and pass it as a kwarg."""
+        logger.debug(f"invoke called with config: {config}")
+
+        # Extract thread_id from config and add it to kwargs
+        if config and isinstance(config, dict):
+            configurable = config.get("configurable", {})
+            thread_id = configurable.get("thread_id")
+            if thread_id:
+                kwargs["thread_id"] = thread_id
+                logger.debug(f"Extracted thread_id: {thread_id} and added to kwargs")
+
+        # Call parent invoke - the thread_id will now be passed through in kwargs
+        return super().invoke(input=input, config=config, stop=stop, **kwargs)
 
     @property
     def _identifying_params(self) -> dict[str, Any]:
@@ -92,6 +251,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
 
         Args:
             messages (list[BaseMessage]): The messages to analyze.
+            thread_id (UUID | None): The thread ID for the conversation.
 
         Returns:
             dict[str, DetectorOutput]: A dictionary mapping message and tool call ids to their respective detection results.
@@ -134,7 +294,6 @@ class PrivacyEnabledChatModel(BaseChatModel):
         # Invoke the detector to analyze the transformed texts
         detection_results: list[list[Entity]] = self.detector.batch(
             inputs=[text for _, text in transformed_texts.items()],
-            context_id=self.context_id,
         )
 
         # Create a mapping of message IDs to their detection results
@@ -152,8 +311,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
         """Replace sensitive information in the messages with placeholders.
 
         Args:
-            messages (list[BaseMessage]): The messages to analyze.
-            detection_results (list[DetectionResult]): The detection results for the messages.
+            input (ReplaceInput): Input containing messages, detection results and thread_id of the conversation.
 
         Returns:
             list[BaseMessage]: The messages with sensitive information replaced.
@@ -161,6 +319,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
 
         replaced_messages: list[BaseMessage] = []
         detector_outputs_by_uuid: dict[str, list[Entity]] = input.get("detector_outputs_by_uuid", {})
+        thread_id: UUID = input.get("thread_id")
         for message in input.get("messages", []):
             # Copy the message to avoid modifying the original
             replaced_message: BaseMessage = message.model_copy()
@@ -173,7 +332,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
             if matching_detector_output := detector_outputs_by_uuid.get(message_id):
                 assert isinstance(message.content, str), "Message content must be a string"
                 replaced_message.content = self.replacer.replace(
-                    text=message.content, entities=matching_detector_output, context_id=self.context_id
+                    text=message.content, entities=matching_detector_output, thread_id=thread_id
                 )
 
             # Replace sensitive information in tool calls
@@ -193,7 +352,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
                         replaced_args = self.replacer.replace(
                             text=tool_call_args,
                             entities=matching_tool_call_output,
-                            context_id=self.context_id,
+                            thread_id=thread_id,
                         )
                         replaced_tool_call["args"] = loads(replaced_args)
                         replaced_tool_calls.append(replaced_tool_call)
@@ -207,20 +366,22 @@ class PrivacyEnabledChatModel(BaseChatModel):
 
         return replaced_messages
 
-    def _restore_entities(self, message: BaseMessage) -> BaseMessage:
+    def _restore_entities(self, message: BaseMessage, thread_id: UUID) -> BaseMessage:
         """Restore sensitive information in the response content.
 
         Args:
-            chat_result (ChatResult): The chat result to restore.
+            message (BaseMessage): The message to restore.
+            thread_id (UUID | None): The thread ID for the conversation.
 
         Returns:
-            ChatResult: The chat result with sensitive information restored.
+            BaseMessage: The message with sensitive information restored.
         """
         # Create a copy of the message to avoid modifying the original
         restored_message: BaseMessage = message.model_copy()
         # Restore sensitive information in the message content
         assert isinstance(message.content, str), "Message content must be a string"
-        restored_message.content = self.replacer.restore(text=message.content, context_id=self.context_id)
+
+        restored_message.content = self.replacer.restore(text=message.content, thread_id=thread_id)
 
         # If the message is an AIMessage and has tool calls, restore them as well
         if isinstance(message, AIMessage) and len(message.tool_calls) > 0:
@@ -229,7 +390,7 @@ class PrivacyEnabledChatModel(BaseChatModel):
                 # Restore the tool call arguments
                 restored_tool_call: ToolCall = tool_call.copy()
                 tool_call_args: str = dumps(tool_call.get("args", {}))
-                restored_args = self.replacer.restore(text=tool_call_args, context_id=self.context_id)
+                restored_args = self.replacer.restore(text=tool_call_args, thread_id=thread_id)
                 restored_tool_call["args"] = loads(restored_args)
                 restored_tool_calls.append(restored_tool_call)
 
