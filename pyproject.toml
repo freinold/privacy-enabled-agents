@@ -25,7 +25,7 @@ dependencies = [
     "langgraph-cli==0.3.6",
     "schwifty==2025.7.0",
     "geopy==2.4.1",
-    "ddgs==9.5.1",
+    "ddgs==9.5.2",
     "gradio==5.39.0",
 ]
 
