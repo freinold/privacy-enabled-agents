@@ -16,8 +16,6 @@ services:
       retries: 5
     environment:
       - VALKEY_SAVE=60 1 # Save DB every 60 seconds if at least 1 change
-    networks:
-      - privacy-network
     labels:
       - "com.privacy-enabled-agents.description=Valkey storage backend"
 
@@ -26,8 +24,6 @@ services:
     ports:
       - "6380:6379"
     restart: on-failure
-    networks:
-      - privacy-network
     labels:
       - "com.privacy-enabled-agents.description=Redis checkpointer backend"
 
@@ -40,12 +36,8 @@ services:
     tty: true
     volumes:
       - "${HOME}/.cache/huggingface:/app/huggingface:rw"
-      - "./gliner-api-configs/pii+phi_quantized.yaml:/app/config.yaml:ro"
+      - "./gliner-api-configs/quantized_no-entities.yaml:/app/config.yaml:ro"
     environment: []
-
-networks:
-  privacy-network:
-    driver: bridge
 
 volumes:
   valkey-data:
