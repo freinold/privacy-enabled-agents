@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from logging import Logger, getLogger
 from typing import Any, TypeVar
+from urllib.parse import urljoin
 
 from httpx import Client, HTTPError, Response, get
 from langchain_core.runnables import RunnableConfig
@@ -30,7 +31,8 @@ class RemoteGlinerDetector(BaseDetector):
         api_key: str | None = None,
         supported_entities: set[str] | None = None,
     ) -> None:
-        response: Response = get(f"{base_url}/api/info")
+        info_url: str = urljoin(base=base_url, url="/api/info")
+        response: Response = get(info_url)
         response.raise_for_status()
         info_response: RemoteInfoResponse = RemoteInfoResponse.model_validate(response.json())
 
