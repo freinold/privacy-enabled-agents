@@ -10,7 +10,7 @@ dependencies = [
     "langchain==0.3.27",
     "langgraph==0.6.4",
     "python-dotenv==1.1.1",
-    "langfuse==3.2.1",
+    "langfuse==3.2.3",
     "truststore==0.10.3",
     "pydantic==2.11.7",
     "pydantic-extra-types==2.10.5",
