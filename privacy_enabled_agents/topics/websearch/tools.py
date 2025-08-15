@@ -31,13 +31,12 @@ class SearchWebTool(BaseTool):
     return_direct: bool = False
     response_format: Literal["content", "content_and_artifact"] = "content"
 
-    def _run(self, input: SearchWebInput) -> list[dict[str, str]]:
-        client: DDGS = get_ddgs_client()
-        results: list[dict[str, str]] = client.text(
-            query=input.query,
+    def _run(self, query: str) -> list[dict[str, str]]:
+        ddgs: DDGS = get_ddgs_client()
+        results: list[dict[str, str]] = ddgs.text(
+            query=query,
             region="de-de",
-            safesearch="on",
+            backend="google",
             max_results=5,
-            backend="duckduckgo",
         )
         return results

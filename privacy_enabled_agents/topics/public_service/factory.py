@@ -1,3 +1,5 @@
+from typing import override
+
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
@@ -5,18 +7,21 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 
-from privacy_enabled_agents.base import PII_PRELUDE_PROMPT
-from privacy_enabled_agents.examples.public_service.model import (
+from privacy_enabled_agents import BASE_ENTITIES, PII_PRELUDE_PROMPT
+from privacy_enabled_agents.topics import AgentFactory
+
+from .model import (
+    PUBLIC_SERVICE_ENTITIES,
     PublicServiceState,
 )
-from privacy_enabled_agents.examples.public_service.tools import (
+from .tools import (
     ApplyParkingPermitTool,
     CheckParkingPermitsTool,
     PayParkingPermitFeeTool,
     RenewParkingPermitTool,
 )
 
-public_service_agent_prompt = """
+PUBLIC_SERVICE_AGENT_PROMPT = """
 You are a helpful and professional public service assistant representing the city administration's parking permit department. Your role is to assist citizens with all aspects of parking permit management in a courteous, efficient, and secure manner.
 
 Your primary responsibility is to help citizens navigate the parking permit system while ensuring compliance with municipal regulations and maintaining the highest standards of data privacy and security. You should always be polite, patient, and thorough in your responses, providing clear explanations and guidance.
@@ -70,31 +75,39 @@ Your goal is to make the parking permit process as smooth and transparent as pos
 """
 
 
-def create_public_service_agent(
-    chat_model: BaseChatModel,
-    checkpointer: BaseCheckpointSaver,
-    runnable_config: RunnableConfig,
-    prompt: str | None = None,
-) -> CompiledStateGraph:
-    tools: list[BaseTool] = [
-        CheckParkingPermitsTool(),
-        ApplyParkingPermitTool(),
-        PayParkingPermitFeeTool(),
-        RenewParkingPermitTool(),
-    ]
+class PublicServiceAgentFactory(AgentFactory):
+    @classmethod
+    def create(
+        cls,
+        chat_model: BaseChatModel,
+        checkpointer: BaseCheckpointSaver,
+        runnable_config: RunnableConfig,
+        prompt: str | None = None,
+    ) -> CompiledStateGraph:
+        tools: list[BaseTool] = [
+            CheckParkingPermitsTool(),
+            ApplyParkingPermitTool(),
+            PayParkingPermitFeeTool(),
+            RenewParkingPermitTool(),
+        ]
 
-    if prompt is None:
-        prompt = public_service_agent_prompt
+        if prompt is None:
+            prompt = PUBLIC_SERVICE_AGENT_PROMPT
 
-    prompt = PII_PRELUDE_PROMPT + prompt
+        prompt = PII_PRELUDE_PROMPT + prompt
 
-    agent: CompiledStateGraph = create_react_agent(
-        name="public_service_agent",
-        model=chat_model,
-        tools=tools,
-        prompt=prompt,
-        checkpointer=checkpointer,
-        state_schema=PublicServiceState,
-    ).with_config(runnable_config)
+        agent: CompiledStateGraph = create_react_agent(
+            name="public_service_agent",
+            model=chat_model,
+            tools=tools,
+            prompt=prompt,
+            checkpointer=checkpointer,
+            state_schema=PublicServiceState,
+        ).with_config(runnable_config)
 
-    return agent
+        return agent
+
+    @override
+    @classmethod
+    def supported_entities(cls) -> set[str]:
+        return BASE_ENTITIES | PUBLIC_SERVICE_ENTITIES

@@ -1,3 +1,5 @@
+from typing import override
+
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
@@ -5,9 +7,12 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 
+from privacy_enabled_agents import BASE_ENTITIES
 from privacy_enabled_agents.base import PII_PRELUDE_PROMPT
-from privacy_enabled_agents.examples.medical.model import MedicalContext
-from privacy_enabled_agents.examples.medical.tools import (
+from privacy_enabled_agents.topics import AgentFactory
+
+from .model import MEDICAL_ENTITIES, MedicalContext
+from .tools import (
     BookMedicalTransportTool,
     CancelMedicalTransportTool,
     CheckServiceAreaTool,
@@ -16,7 +21,7 @@ from privacy_enabled_agents.examples.medical.tools import (
     ListMedicalTransportsTool,
 )
 
-medical_agent_prompt = """
+MEDICAL_AGENT_PROMPT = """
 You are a specialized medical assistant for a healthcare transportation service provider operating in München, Germany. 
 Your primary role is to help patients and healthcare professionals coordinate medical transportation services and access information about local medical facilities.
 
@@ -58,33 +63,41 @@ You should provide accurate, helpful, and timely responses while maintaining the
 """
 
 
-def create_medical_agent(
-    chat_model: BaseChatModel,
-    checkpointer: BaseCheckpointSaver,
-    runnable_config: RunnableConfig,
-    prompt: str | None = None,
-) -> CompiledStateGraph:
-    tools: list[BaseTool] = [
-        GetCoordinateFromAdressTool(),
-        CheckServiceAreaTool(),
-        FindNearbyMedicalFacilitiesTool(),
-        BookMedicalTransportTool(),
-        ListMedicalTransportsTool(),
-        CancelMedicalTransportTool(),
-    ]
+class MedicalAgentFactory(AgentFactory):
+    @classmethod
+    def create(
+        cls,
+        chat_model: BaseChatModel,
+        checkpointer: BaseCheckpointSaver,
+        runnable_config: RunnableConfig,
+        prompt: str | None = None,
+    ) -> CompiledStateGraph:
+        tools: list[BaseTool] = [
+            GetCoordinateFromAdressTool(),
+            CheckServiceAreaTool(),
+            FindNearbyMedicalFacilitiesTool(),
+            BookMedicalTransportTool(),
+            ListMedicalTransportsTool(),
+            CancelMedicalTransportTool(),
+        ]
 
-    if prompt is None:
-        prompt = medical_agent_prompt
+        if prompt is None:
+            prompt = MEDICAL_AGENT_PROMPT
 
-    prompt = PII_PRELUDE_PROMPT + prompt
+        prompt = PII_PRELUDE_PROMPT + prompt
 
-    agent = create_react_agent(
-        name="medical_agent",
-        model=chat_model,
-        tools=tools,
-        prompt=prompt,
-        checkpointer=checkpointer,
-        context_schema=MedicalContext,
-    ).with_config(runnable_config)
+        agent: CompiledStateGraph = create_react_agent(
+            name="medical_agent",
+            model=chat_model,
+            tools=tools,
+            prompt=prompt,
+            checkpointer=checkpointer,
+            context_schema=MedicalContext,
+        ).with_config(runnable_config)
 
-    return agent
+        return agent
+
+    @override
+    @classmethod
+    def supported_entities(cls) -> set[str]:
+        return BASE_ENTITIES | MEDICAL_ENTITIES

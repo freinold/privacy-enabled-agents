@@ -7,6 +7,18 @@ from pydantic_extra_types.coordinate import Coordinate
 from privacy_enabled_agents import PrivacyEnabledAgentState
 from privacy_enabled_agents.custom_types.german_medical_insurance_id import GermanMedicalInsuranceID
 
+MEDICAL_ENTITIES: set[str] = {
+    "condition",
+    "symptoms",
+    "diagnosis",
+    "treatment",
+    "medication",
+    "medical insurance id",
+    "amount",
+    "date",
+    "age",
+}
+
 
 class MedicalContext(BaseModel):
     """Context for the medical agent."""

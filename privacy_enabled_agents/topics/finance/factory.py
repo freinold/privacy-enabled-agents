@@ -1,3 +1,5 @@
+from typing import override
+
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
@@ -5,15 +7,17 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 
-from privacy_enabled_agents.base import PII_PRELUDE_PROMPT
-from privacy_enabled_agents.examples.finance.model import FinanceState
-from privacy_enabled_agents.examples.finance.tools import (
+from privacy_enabled_agents import BASE_ENTITIES, PII_PRELUDE_PROMPT
+from privacy_enabled_agents.topics import AgentFactory
+
+from .model import FINANCE_ENTITIES, FinanceState
+from .tools import (
     CheckBalanceTool,
     IncreaseCreditLimitTool,
     TransferMoneyTool,
 )
 
-finance_agent_prompt: str = """
+FINANCE_AGENT_PROMPT = """
 You are a professional financial assistant and banking advisor for a secure banking platform. Your primary role is to help customers manage their banking needs efficiently while maintaining the highest standards of security and regulatory compliance.
 
 ## Your Capabilities
@@ -59,30 +63,38 @@ Always prioritize customer security and satisfaction while ensuring full regulat
 """
 
 
-def create_finance_agent(
-    chat_model: BaseChatModel,
-    checkpointer: BaseCheckpointSaver,
-    runnable_config: RunnableConfig,
-    prompt: str | None = None,
-) -> CompiledStateGraph:
-    tools: list[BaseTool] = [
-        CheckBalanceTool(),
-        TransferMoneyTool(),
-        IncreaseCreditLimitTool(),
-    ]
+class FinanceAgentFactory(AgentFactory):
+    @classmethod
+    def create(
+        cls,
+        chat_model: BaseChatModel,
+        checkpointer: BaseCheckpointSaver,
+        runnable_config: RunnableConfig,
+        prompt: str | None = None,
+    ) -> CompiledStateGraph:
+        tools: list[BaseTool] = [
+            CheckBalanceTool(),
+            TransferMoneyTool(),
+            IncreaseCreditLimitTool(),
+        ]
 
-    if prompt is None:
-        prompt = finance_agent_prompt
+        if prompt is None:
+            prompt = FINANCE_AGENT_PROMPT
 
-    prompt = PII_PRELUDE_PROMPT + prompt
+        prompt = PII_PRELUDE_PROMPT + prompt
 
-    agent = create_react_agent(
-        name="finance_agent",
-        model=chat_model,
-        tools=tools,
-        prompt=prompt,
-        checkpointer=checkpointer,
-        state_schema=FinanceState,
-    ).with_config(config=runnable_config)
+        agent = create_react_agent(
+            name="finance_agent",
+            model=chat_model,
+            tools=tools,
+            prompt=prompt,
+            checkpointer=checkpointer,
+            state_schema=FinanceState,
+        ).with_config(config=runnable_config)
 
-    return agent
+        return agent
+
+    @override
+    @classmethod
+    def supported_entities(cls) -> set[str]:
+        return BASE_ENTITIES | FINANCE_ENTITIES

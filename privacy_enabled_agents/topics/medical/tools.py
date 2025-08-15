@@ -16,11 +16,10 @@ from pydantic import BaseModel, Field
 from pydantic_extra_types.coordinate import Coordinate
 from pydantic_extra_types.phone_numbers import PhoneNumberValidator
 
-from privacy_enabled_agents.custom_types.german_medical_insurance_id import (
-    GermanMedicalInsuranceID,
-)
-from privacy_enabled_agents.examples.medical.agent import MedicalContext
-from privacy_enabled_agents.examples.medical.model import (
+from privacy_enabled_agents.custom_types import GermanMedicalInsuranceID
+
+from .model import (
+    MedicalContext,
     MedicalFacility,
     MedicalState,
     MedicalTransport,
@@ -52,9 +51,9 @@ class GetCoordinateFromAdressTool(BaseTool):
     return_direct: bool = False
     response_format: Literal["content", "content_and_artifact"] = "content"
 
-    def _run(self, input: GetCoordinateFromAddressInput) -> Coordinate:
+    def _run(self, address: str) -> Coordinate:
         geocoder: Nominatim = get_nominatim_geocoder()
-        location: Location | None = geocoder.geocode(input.address)  # type: ignore
+        location: Location | None = geocoder.geocode(address)  # type: ignore
         if location:
             return Coordinate(
                 latitude=location.latitude,
@@ -78,16 +77,16 @@ class CheckServiceAreaTool(BaseTool):
     return_direct: bool = False
     response_format: Literal["content", "content_and_artifact"] = "content"
 
-    def _run(self, input: CheckServiceAreaInput) -> bool:
+    def _run(self, location: Coordinate) -> bool:
         geocoder: Nominatim = get_nominatim_geocoder()
         context: MedicalContext = get_runtime(MedicalContext).context
 
-        location: Location | None = geocoder.reverse(
-            query=(input.location.latitude, input.location.longitude),
+        loc: Location | None = geocoder.reverse(
+            query=(location.latitude, location.longitude),
             exactly_one=True,
         )  # type: ignore
-        if location:
-            return context.city in location.address
+        if loc:
+            return context.city in loc.address
         raise ValueError("Could not find location for coordinates.")
 
 
@@ -110,14 +109,14 @@ class FindNearbyMedicalFacilitiesTool(BaseTool):
 
     def _run(
         self,
-        input: FindNearbyMedicalFacilitiesInput,
+        location: Coordinate,
         state: Annotated[MedicalState, InjectedState],
     ) -> list[MedicalFacility]:
         facilities: list[MedicalFacility] = state.facilities
         nearby_facilities: list[MedicalFacility] = []
         for facility in facilities:
             facility_distance: float = distance(
-                (input.location.latitude, input.location.longitude),
+                (location.latitude, location.longitude),
                 (facility.location.latitude, facility.location.longitude),
             ).km
             if facility_distance <= 10:
@@ -155,26 +154,32 @@ class BookMedicalTransportTool(BaseTool):
 
     def _run(
         self,
-        input: BookMedicalTransportInput,
+        location: Coordinate,
+        facility: str,
+        transport_direction: Literal["to_facility", "from_facility"],
+        transport_datetime: datetime,
+        patient_name: str,
+        patient_dob: date,
+        patient_medical_insurance_id: GermanMedicalInsuranceID,
         state: Annotated[MedicalState, InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
     ):
         facilities: list[MedicalFacility] = state.facilities
 
-        facility = next(
-            (f for f in facilities if f.name == input.facility),
+        fac = next(
+            (f for f in facilities if f.name == facility),
             None,
         )
 
-        if facility is None:
-            raise ValueError(f"Facility '{input.facility}' not found in the service area.")
+        if fac is None:
+            raise ValueError(f"Facility '{facility}' not found in the service area.")
 
-        if input.transport_direction == "to_facility":
-            start_location: Coordinate = input.location
-            destination_location: Coordinate = facility.location
+        if transport_direction == "to_facility":
+            start_location: Coordinate = location
+            destination_location: Coordinate = fac.location
         else:
-            start_location: Coordinate = facility.location
-            destination_location: Coordinate = input.location
+            start_location: Coordinate = fac.location
+            destination_location: Coordinate = location
 
         # Create a new random transport PIN
         transport_pin: str = f"{randint(0, 999999):06d}"
@@ -186,10 +191,10 @@ class BookMedicalTransportTool(BaseTool):
             transport_pin=transport_pin,
             start_location=start_location,
             destination_location=destination_location,
-            transport_datetime=input.transport_datetime.isoformat(),
-            patient_name=input.patient_name,
-            patient_dob=input.patient_dob,
-            patient_medical_insurance_id=input.patient_medical_insurance_id,
+            transport_datetime=transport_datetime.isoformat(),
+            patient_name=patient_name,
+            patient_dob=patient_dob,
+            patient_medical_insurance_id=patient_medical_insurance_id,
         )
 
         state.transports.append(transport)
@@ -226,11 +231,11 @@ class ListMedicalTransportsTool(BaseTool):
     return_direct: bool = False
     response_format: Literal["content", "content_and_artifact"] = "content"
 
-    def _run(self, input: ListMedicalTransportsInput, state: Annotated[MedicalState, InjectedState]) -> list[dict[str, Any]]:
+    def _run(
+        self, patient_medical_insurance_id: GermanMedicalInsuranceID, patient_dob: date, state: Annotated[MedicalState, InjectedState]
+    ) -> list[dict[str, Any]]:
         transports: Generator = (
-            t
-            for t in state.transports
-            if t.patient_medical_insurance_id == input.patient_medical_insurance_id and t.patient_dob == input.patient_dob
+            t for t in state.transports if t.patient_medical_insurance_id == patient_medical_insurance_id and t.patient_dob == patient_dob
         )
         transports = (t.model_dump().pop("transport_pin") for t in transports)
         return list(transports)
@@ -258,15 +263,16 @@ class CancelMedicalTransportTool(BaseTool):
 
     def _run(
         self,
-        input: CancelMedicalTransportInput,
+        transport_id: str,
+        transport_pin: str,
         state: Annotated[MedicalState, InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
     ) -> Command:
-        transport: MedicalTransport | None = next((t for t in state.transports if t.transport_id == input.transport_id), None)
+        transport: MedicalTransport | None = next((t for t in state.transports if t.transport_id == transport_id), None)
         if not transport:
-            raise ValueError(f"Transport with ID {input.transport_id} not found.")
+            raise ValueError(f"Transport with ID {transport_id} not found.")
 
-        if transport.transport_pin != input.transport_pin:
+        if transport.transport_pin != transport_pin:
             raise ValueError("Invalid transport PIN provided.")
 
         state.transports.remove(transport)

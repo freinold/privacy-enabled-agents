@@ -5,6 +5,13 @@ from pydantic import Field
 
 from privacy_enabled_agents import PrivacyEnabledAgentState
 
+PUBLIC_SERVICE_ENTITIES: set[str] = {
+    "passport number",
+    "permit_id",
+    "vehicle_plate",
+    "zone",
+}
+
 
 class Citizen(TypedDict):
     name: str

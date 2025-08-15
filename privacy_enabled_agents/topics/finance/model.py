@@ -5,6 +5,16 @@ from pydantic import Field
 
 from privacy_enabled_agents import PrivacyEnabledAgentState
 
+FINANCE_ENTITIES: set[str] = {
+    "iban",
+    "balance",
+    "currency",
+    "account_number",
+    "amount",
+    "date",
+    "age",
+}
+
 
 class Account(TypedDict):
     balance: float

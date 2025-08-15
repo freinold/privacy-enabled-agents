@@ -8,7 +8,7 @@ from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
-from privacy_enabled_agents.examples.public_service.model import (
+from .model import (
     Citizen,
     ParkingPermit,
     PublicServiceState,
@@ -65,7 +65,9 @@ class ApplyParkingPermitTool(BaseTool):
 
     def _run(
         self,
-        input: ApplyParkingPermitInput,
+        permit_type: Literal["residential", "visitor", "business"],
+        vehicle_plate: str,
+        zone: str,
         state: Annotated[PublicServiceState, InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
     ) -> Command:
@@ -80,14 +82,14 @@ class ApplyParkingPermitTool(BaseTool):
                 permit
                 for permit in state.parking_permits.values()
                 if permit["citizen_id"] == state.current_citizen_id
-                and permit["vehicle_plate"] == input.vehicle_plate
+                and permit["vehicle_plate"] == vehicle_plate
                 and permit["status"] == "active"
             ),
             None,
         )
 
         if existing_permit:
-            raise ValueError(f"Active permit already exists for vehicle {input.vehicle_plate}.")
+            raise ValueError(f"Active permit already exists for vehicle {vehicle_plate}.")
 
         # Check if citizen has been registered for at least 30 days
         if citizen["registration_date"] > datetime.now() - timedelta(days=30):
@@ -112,14 +114,14 @@ class ApplyParkingPermitTool(BaseTool):
         new_permit: ParkingPermit = {
             "permit_id": new_permit_id,
             "citizen_id": state.current_citizen_id,
-            "permit_type": input.permit_type,
-            "vehicle_plate": input.vehicle_plate,
+            "permit_type": permit_type,
+            "vehicle_plate": vehicle_plate,
             "start_date": datetime.now(),
             "end_date": datetime.now() + timedelta(days=365),
             "status": "pending",
             "fee_paid": False,
-            "zone": input.zone,
-            "annual_fee": permit_fees[input.permit_type],
+            "zone": zone,
+            "annual_fee": permit_fees[permit_type],
         }
 
         state.parking_permits[new_permit_id] = new_permit
@@ -159,23 +161,23 @@ class PayParkingPermitFeeTool(BaseTool):
 
     def _run(
         self,
-        input: PayParkingPermitFeeInput,
+        permit_id: str,
         state: Annotated[PublicServiceState, InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
     ) -> Command:
-        permit: ParkingPermit | None = state.parking_permits.get(input.permit_id)
+        permit: ParkingPermit | None = state.parking_permits.get(permit_id)
 
         if not permit:
-            raise ValueError(f"Parking permit {input.permit_id} not found.")
+            raise ValueError(f"Parking permit {permit_id} not found.")
 
         if permit["citizen_id"] != state.current_citizen_id:
-            raise ValueError(f"Permit {input.permit_id} does not belong to current citizen.")
+            raise ValueError(f"Permit {permit_id} does not belong to current citizen.")
 
         if permit["fee_paid"]:
-            raise ValueError(f"Fee for permit {input.permit_id} has already been paid.")
+            raise ValueError(f"Fee for permit {permit_id} has already been paid.")
 
         if permit["status"] not in ["pending", "expired"]:
-            raise ValueError(f"Cannot pay fee for permit {input.permit_id} with status {permit['status']}.")
+            raise ValueError(f"Cannot pay fee for permit {permit_id} with status {permit['status']}.")
 
         # Simulate payment processing
         if random() < 0.05:
@@ -190,7 +192,7 @@ class PayParkingPermitFeeTool(BaseTool):
             permit["start_date"] = datetime.now()
             permit["end_date"] = datetime.now() + timedelta(days=365)
 
-        state.parking_permits[input.permit_id] = permit
+        state.parking_permits[permit_id] = permit
 
         return Command(
             update={
@@ -198,7 +200,7 @@ class PayParkingPermitFeeTool(BaseTool):
                 "messages": [
                     ToolMessage(
                         content=(
-                            f"Payment of ${permit['annual_fee']:.2f} processed successfully for permit {input.permit_id}. "
+                            f"Payment of ${permit['annual_fee']:.2f} processed successfully for permit {permit_id}. "
                             f"Permit is now active and valid until {permit['end_date'].strftime('%Y-%m-%d')}."
                         ),
                         tool_call_id=tool_call_id,
@@ -226,25 +228,25 @@ class RenewParkingPermitTool(BaseTool):
 
     def _run(
         self,
-        input: RenewParkingPermitInput,
+        permit_id: str,
         state: Annotated[PublicServiceState, InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
     ) -> Command:
-        permit: ParkingPermit | None = state.parking_permits.get(input.permit_id)
+        permit: ParkingPermit | None = state.parking_permits.get(permit_id)
 
         if not permit:
-            raise ValueError(f"Parking permit {input.permit_id} not found.")
+            raise ValueError(f"Parking permit {permit_id} not found.")
 
         if permit["citizen_id"] != state.current_citizen_id:
-            raise ValueError(f"Permit {input.permit_id} does not belong to current citizen.")
+            raise ValueError(f"Permit {permit_id} does not belong to current citizen.")
 
         if permit["status"] not in ["active", "expired"]:
-            raise ValueError(f"Cannot renew permit {input.permit_id} with status {permit['status']}.")
+            raise ValueError(f"Cannot renew permit {permit_id} with status {permit['status']}.")
 
         # Check if permit is close to expiry (within 30 days) or already expired
         days_until_expiry: int = (permit["end_date"] - datetime.now()).days
         if days_until_expiry > 30 and permit["status"] == "active":
-            raise ValueError(f"Permit {input.permit_id} can only be renewed within 30 days of expiry.")
+            raise ValueError(f"Permit {permit_id} can only be renewed within 30 days of expiry.")
 
         # Simulate renewal processing
         if random() < 0.05:
@@ -256,7 +258,7 @@ class RenewParkingPermitTool(BaseTool):
         permit["status"] = "pending"
         permit["fee_paid"] = False
 
-        state.parking_permits[input.permit_id] = permit
+        state.parking_permits[permit_id] = permit
 
         return Command(
             update={
@@ -264,7 +266,7 @@ class RenewParkingPermitTool(BaseTool):
                 "messages": [
                     ToolMessage(
                         content=(
-                            f"Parking permit {input.permit_id} renewed successfully. "
+                            f"Parking permit {permit_id} renewed successfully. "
                             f"Annual fee: ${permit['annual_fee']:.2f}. "
                             f"Please pay the fee to activate the renewed permit."
                         ),
