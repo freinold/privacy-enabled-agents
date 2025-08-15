@@ -86,7 +86,16 @@ def create_chat_function(
         yield updated_history, [], browser_state
 
         input: dict[str, Any] = {"messages": [HumanMessage(content=message)]}
-        response: dict[str, Any] = agent.invoke(input, config={"configurable": {"thread_id": thread_id}})
+        response: dict[str, Any] = agent.invoke(
+            input,
+            config={
+                "configurable": {"thread_id": thread_id},
+                "metadata": {
+                    "langfuse_session_id": thread_id,
+                    "langfuse_tags": [topic],
+                },
+            },
+        )
 
         logger.debug(f"Agent response contains {len(response['messages'])} messages")
 
