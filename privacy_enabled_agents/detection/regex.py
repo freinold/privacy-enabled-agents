@@ -1,10 +1,11 @@
 import re
-from typing import Any, Literal
+from typing import Any, Literal, Sequence
 
 from langchain_core.runnables.config import RunnableConfig
 
 from privacy_enabled_agents import Entity
-from privacy_enabled_agents.detection import BaseDetector
+
+from .base import BaseDetector
 
 
 class RegexDetector(BaseDetector):
@@ -42,3 +43,17 @@ class RegexDetector(BaseDetector):
             for match in re.finditer(pattern, input):
                 entities.append(Entity(start=match.start(), end=match.end(), text=match.group(), label=entity_type, score=1.0))
         return entities
+
+    def batch(
+        self,
+        inputs: Sequence[str],
+        config: RunnableConfig | list[RunnableConfig] | None = None,
+        *,
+        threshold: float | None = None,
+        **kwargs: Any,
+    ) -> list[list[Entity]]:
+        if type(config) is list[RunnableConfig]:
+            return [self.invoke(input, config_item, threshold=threshold, **kwargs) for input, config_item in zip(inputs, config)]
+        else:
+            assert isinstance(config, dict) or config is None
+            return [self.invoke(input, config, threshold=threshold, **kwargs) for input in inputs]
