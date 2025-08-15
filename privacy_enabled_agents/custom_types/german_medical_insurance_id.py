@@ -8,7 +8,7 @@ class GermanMedicalInsuranceID(str):
     """Represents a german medical insurance ID and provides methods for validation and serialization."""
 
     @classmethod
-    def __get_pydantic_core_schema(cls, sources: type[Any], handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+    def __get_pydantic_core_schema__(cls, source: type[Any], handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
         """Return a Pydantic CoreSchema with the german medical insurance ID validation.
 
         Args:
