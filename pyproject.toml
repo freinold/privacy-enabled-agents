@@ -19,14 +19,13 @@ dependencies = [
     "faker==37.5.3",
     "cryptography==45.0.5",
     "langgraph-checkpoint-redis==0.0.8",
-    "duckduckgo-search==8.1.1",
     "stamina==25.1.0",
     "langchain-mistralai==0.2.11",
     "langgraph-cli==0.3.6",
     "schwifty==2025.7.0",
     "geopy==2.4.1",
-    "ddgs==9.5.1",
     "gradio==5.39.0",
+    "ddgs==9.5.2",
 ]
 
 [dependency-groups]
