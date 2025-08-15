@@ -26,6 +26,7 @@ dependencies = [
     "geopy==2.4.1",
     "ddgs==9.5.2",
     "gradio==5.42.0",
+    "pydantic-settings==2.10.1",
 ]
 
 [dependency-groups]
