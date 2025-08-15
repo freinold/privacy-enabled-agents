@@ -1,10 +1,11 @@
 import json
+import logging
 from uuid import UUID
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from valkey import Valkey
 
-from privacy_enabled_agents.storage.conversation import BaseConversationStorage
+from .base import BaseConversationStorage
 
 
 class ValkeyConversationStorage(BaseConversationStorage):
@@ -42,36 +43,26 @@ class ValkeyConversationStorage(BaseConversationStorage):
 
     def _serialize_message(self, message: BaseMessage) -> str:
         """Serialize a message to JSON string"""
-        return json.dumps(
-            {
-                "type": message.__class__.__name__,
-                "content": message.content,
-                "id": message.id,
-                "additional_kwargs": getattr(message, "additional_kwargs", {}),
-                "response_metadata": getattr(message, "response_metadata", {}),
-            }
-        )
+        return message.model_dump_json()
 
     def _deserialize_message(self, message_str: str) -> BaseMessage:
         """Deserialize a message from JSON string"""
         data = json.loads(message_str)
-        message_type = data["type"]
+        message_type: str = data["type"]
 
-        # Create the appropriate message type
-        if message_type == "HumanMessage":
-            msg = HumanMessage(content=data["content"])
-        elif message_type == "AIMessage":
-            msg = AIMessage(content=data["content"])
-        else:
-            # Fallback to HumanMessage for unknown types
-            msg = HumanMessage(content=data["content"])
-
-        # Restore additional attributes
-        msg.id = data.get("id")
-        if "additional_kwargs" in data:
-            msg.additional_kwargs = data["additional_kwargs"]
-        if "response_metadata" in data:
-            msg.response_metadata = data["response_metadata"]
+        # Create the appropriate message type using match-case (Python 3.10+)
+        match message_type:
+            case "ai":
+                msg = AIMessage.model_validate_json(message_str)
+            case "human":
+                msg = HumanMessage.model_validate_json(message_str)
+            case "system":
+                msg = SystemMessage.model_validate_json(message_str)
+            case "tool":
+                msg = ToolMessage.model_validate_json(message_str)
+            case _:
+                # Fallback to BaseMessage for unknown types
+                msg = BaseMessage.model_validate_json(message_str)
 
         return msg
 
@@ -130,7 +121,7 @@ class ValkeyConversationStorage(BaseConversationStorage):
                 messages.append(self._deserialize_message(msg_str.decode("utf-8")))
             except (json.JSONDecodeError, KeyError) as e:
                 # Skip invalid messages
-                print(f"Warning: Failed to deserialize message: {e}")
+                logging.warning(f"Warning: Failed to deserialize message: {e}")
                 continue
 
         # Reverse to get chronological order (oldest first)
