@@ -109,13 +109,15 @@ class PrivacyEnabledChatModel(BaseChatModel):
         if len(new_messages) > 0:
             # Detect sensitive information in new messages only
             detect_runnable: RunnableLambda[list[BaseMessage], tuple[list[BaseMessage], dict[str, list[Entity]]]] = RunnableLambda(
-                self._detect_entities
+                self._detect_entities, name="detect_entities"
             )
             detector_outputs_by_uuid: dict[str, list[Entity]]
             new_transformed_messages, detector_outputs_by_uuid = detect_runnable.invoke(input=new_messages, **filtered_kwargs)
 
             # Replace sensitive information with placeholders in new messages only
-            replace_runnable: RunnableLambda[ReplaceInput, list[BaseMessage]] = RunnableLambda(self._replace_entities)
+            replace_runnable: RunnableLambda[ReplaceInput, list[BaseMessage]] = RunnableLambda(
+                self._replace_entities, name="replace_entities"
+            )
             new_replaced_messages = replace_runnable.invoke(
                 input={
                     "messages": new_transformed_messages,
@@ -150,7 +152,9 @@ class PrivacyEnabledChatModel(BaseChatModel):
             )
 
         # Restore the original text in the response
-        restore_runnable: RunnableLambda[BaseMessage, BaseMessage] = RunnableLambda(lambda msg: self._restore_entities(msg, thread_id_uuid))
+        restore_runnable: RunnableLambda[BaseMessage, BaseMessage] = RunnableLambda(
+            lambda msg: self._restore_entities(msg, thread_id_uuid), name="restore_entities"
+        )
         restored_output: BaseMessage = restore_runnable.invoke(input=censored_output, **filtered_kwargs)
 
         # Create a ChatGeneration object with the restored output
@@ -379,7 +383,8 @@ class PrivacyEnabledChatModel(BaseChatModel):
         # Create a copy of the message to avoid modifying the original
         restored_message: BaseMessage = message.model_copy()
         # Restore sensitive information in the message content
-        assert isinstance(message.content, str), "Message content must be a string"
+        if not isinstance(message.content, str):
+            message.content = dumps(message.content)
 
         restored_message.content = self.replacer.restore(text=message.content, thread_id=thread_id)
 
