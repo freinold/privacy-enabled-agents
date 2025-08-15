@@ -1,8 +1,9 @@
-from .base import PII_PRELUDE_PROMPT, Entity, PrivacyEnabledAgentState, UnsupportedEntityException
+from .base import BASE_ENTITIES, PII_PRELUDE_PROMPT, Entity, PrivacyEnabledAgentState, UnsupportedEntityException
 
 __all__: list[str] = [
-    "PII_PRELUDE_PROMPT",
+    "BASE_ENTITIES",
     "Entity",
+    "PII_PRELUDE_PROMPT",
     "PrivacyEnabledAgentState",
     "UnsupportedEntityException",
 ]
