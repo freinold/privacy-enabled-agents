@@ -4,7 +4,7 @@ name: general-onnx-quantized
 model_id: knowledgator/gliner-x-large
 onnx_enabled: True
 onnx_model_path: onnx/model_quantized.onnx
-default_threshold: 0.5
+default_threshold: 0.7
 default_entities: []
 api_key: null
 host: "0.0.0.0"
