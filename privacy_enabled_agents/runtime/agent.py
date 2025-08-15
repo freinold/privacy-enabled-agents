@@ -37,7 +37,7 @@ AgentFactoryMap: dict[Literal["basic", "websearch", "financial", "medical", "pub
 def create_privacy_agent(
     topic: Literal["basic", "websearch", "financial", "medical", "public service"] = "basic",
     model_provider: Literal["openai", "mistral"] = "mistral",
-    model_name: str = "mistral-medium-2505",
+    model_name: str = "mistral-medium-2508",
     detector: Literal["gliner", "regex"] = "gliner",
     replacer: Literal["placeholder", "encryption", "hash", "pseudonym"] = "placeholder",
     entity_store: Literal["valkey", "encryption"] = "valkey",
@@ -51,7 +51,7 @@ def create_privacy_agent(
     Args:
         topic (Literal["basic", "websearch", "financial", "medical", "public service"], optional): The topic of the agent. Defaults to "basic".
         model_provider (Literal["openai", "mistral"], optional): The model provider to use. Defaults to "mistral".
-        model_name (str, optional): The name of the model to use. Defaults to "mistral-medium-2506".
+        model_name (str, optional): The name of the model to use. Defaults to "mistral-medium-2508".
         detector (Literal["gliner", "regex"], optional): The detector to use. Defaults to "gliner".
         replacer (Literal["placeholder", "encryption", "hash", "pseudonym"], optional): The replacer to use. Defaults to "placeholder".
         entity_store (Literal["valkey", "encryption"], optional): The entity store to use. Defaults to "valkey".
