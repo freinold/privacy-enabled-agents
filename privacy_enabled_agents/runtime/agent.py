@@ -38,6 +38,7 @@ def create_privacy_agent(
     topic: Literal["basic", "websearch", "financial", "medical", "public service"] = "basic",
     model_provider: Literal["openai", "mistral"] = "mistral",
     model_name: str = "mistral-medium-2508",
+    model_temperature: float = 0.3,
     detector: Literal["gliner", "regex"] = "gliner",
     replacer: Literal["placeholder", "encryption", "hash", "pseudonym"] = "placeholder",
     entity_store: Literal["valkey", "encryption"] = "valkey",
@@ -80,11 +81,11 @@ def create_privacy_agent(
         case "openai":
             from langchain_openai import ChatOpenAI
 
-            chat_model = ChatOpenAI(model=model_name)
+            chat_model = ChatOpenAI(model=model_name, temperature=model_temperature)
         case "mistral":
             from langchain_mistralai import ChatMistralAI
 
-            chat_model = ChatMistralAI(model=model_name)  # type: ignore
+            chat_model = ChatMistralAI(model=model_name, temperature=model_temperature)  # type: ignore
         case _:
             raise ValueError(f"Unsupported model provider: {model_provider}")
 
