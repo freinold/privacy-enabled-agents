@@ -4,9 +4,10 @@ from uuid import UUID
 
 from faker import Faker
 
-from privacy_enabled_agents.base import Entity
-from privacy_enabled_agents.replacement.base import BaseReplacer
-from privacy_enabled_agents.storage.entity import BaseEntityStorage
+from privacy_enabled_agents import Entity
+from privacy_enabled_agents.storage import BaseEntityStorage
+
+from .base import BaseReplacer
 
 
 class PseudonymReplacer(BaseReplacer):
@@ -24,8 +25,8 @@ class PseudonymReplacer(BaseReplacer):
         "location",
     }
 
-    def __init__(self, storage: BaseEntityStorage, locale: str | Sequence[str] = "de_DE") -> None:
-        super().__init__(storage)
+    def __init__(self, entity_storage: BaseEntityStorage, locale: str | Sequence[str] = "de_DE") -> None:
+        super().__init__(entity_storage=entity_storage)
         self.faker = Faker(locale=locale)
 
         self.replacement_map: dict[str, Callable[[], str]] = {

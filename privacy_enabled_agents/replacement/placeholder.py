@@ -1,8 +1,9 @@
 from typing import Literal
 from uuid import UUID
 
-from privacy_enabled_agents.base import Entity
-from privacy_enabled_agents.replacement.base import BaseReplacer
+from privacy_enabled_agents import Entity
+
+from .base import BaseReplacer
 
 
 class PlaceholderReplacer(BaseReplacer):
@@ -14,5 +15,5 @@ class PlaceholderReplacer(BaseReplacer):
 
     def create_replacement(self, entity: Entity, thread_id: UUID) -> str:
         formatted_label: str = entity.label.replace(" ", "_").upper()
-        counter: int = self.storage.inc_label_counter(formatted_label, thread_id)
+        counter: int = self.entity_storage.inc_label_counter(formatted_label, thread_id)
         return f"[{formatted_label}_{counter:02d}]"

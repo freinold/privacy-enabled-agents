@@ -15,14 +15,14 @@ class BaseReplacer(ABC):
     Provides a common interface for all replacement techniques.
     """
 
-    storage: BaseEntityStorage
+    entity_storage: BaseEntityStorage
     _supported_entities: set[str] | Literal["ANY"] = Field(
         default="ANY",
         description="Supported entities for the replacer.",
     )
 
-    def __init__(self, storage: BaseEntityStorage) -> None:
-        self.storage = storage
+    def __init__(self, entity_storage: BaseEntityStorage) -> None:
+        self.entity_storage = entity_storage
 
     def get_supported_entities(self) -> set[str] | Literal["ANY"]:
         """
@@ -64,7 +64,7 @@ class BaseReplacer(ABC):
 
         for entity in entities:
             # Get the replacement for the entity
-            replacement: str | None = self.storage.get_replacement(
+            replacement: str | None = self.entity_storage.get_replacement(
                 text=entity.text,
                 thread_id=thread_id,
             )
@@ -73,7 +73,7 @@ class BaseReplacer(ABC):
             if replacement is None:
                 # Create a new replacement and store it
                 replacement = self.create_replacement(entity=entity, thread_id=thread_id)
-                self.storage.put(
+                self.entity_storage.put(
                     text=entity.text,
                     label=entity.label,
                     replacement=replacement,
@@ -98,7 +98,7 @@ class BaseReplacer(ABC):
             str: The text with the entities restored.
         """
         # Get all replacements for the thread_id
-        replacements: list[str] = self.storage.list_replacements(thread_id=thread_id)
+        replacements: list[str] = self.entity_storage.list_replacements(thread_id=thread_id)
 
         # Sort replacements by length (descending) to handle substring issues
         # e.g., <PERSON-10> should be processed before <PERSON-1>
@@ -107,7 +107,7 @@ class BaseReplacer(ABC):
         # Restore the text by replacing placeholders with original text
         for replacement in replacements:
             if replacement in text:
-                original_text: tuple[str, str] | None = self.storage.get_text(replacement, thread_id)
+                original_text: tuple[str, str] | None = self.entity_storage.get_text(replacement, thread_id)
                 if original_text:
                     text = text.replace(replacement, original_text[0])
 

@@ -1,8 +1,9 @@
 from typing import Literal
 from uuid import UUID
 
-from privacy_enabled_agents.base import Entity
-from privacy_enabled_agents.replacement.base import BaseReplacer
+from privacy_enabled_agents import Entity
+
+from .base import BaseReplacer
 
 
 class HashReplacer(BaseReplacer):
