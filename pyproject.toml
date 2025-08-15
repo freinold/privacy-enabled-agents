@@ -11,7 +11,7 @@ dependencies = [
     "langgraph==0.6.4",
     "python-dotenv==1.1.1",
     "langfuse==3.2.3",
-    "truststore==0.10.3",
+    "truststore==0.10.4",
     "pydantic==2.11.7",
     "pydantic-extra-types==2.10.5",
     "phonenumbers==9.0.11",
