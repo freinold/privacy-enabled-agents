@@ -9,7 +9,8 @@ from pydantic import BaseModel
 from stamina import retry
 
 from privacy_enabled_agents import Entity
-from privacy_enabled_agents.detection import BaseDetector
+
+from .base import BaseDetector
 
 logger: Logger = getLogger(__name__)
 
