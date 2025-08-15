@@ -3,7 +3,7 @@ from uuid import UUID
 
 from cryptography.fernet import Fernet
 
-from privacy_enabled_agents.storage.entity import BaseEntityStorage
+from .base import BaseEntityStorage
 
 
 class EncryptionEntityStorage(BaseEntityStorage):

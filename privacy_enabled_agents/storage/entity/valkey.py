@@ -4,7 +4,7 @@ from uuid import UUID
 
 from valkey import Valkey
 
-from privacy_enabled_agents.storage.entity import BaseEntityStorage
+from .base import BaseEntityStorage
 
 
 class ValkeyEntityStorage(BaseEntityStorage):
