@@ -26,9 +26,7 @@ class BasicAgentFactory(AgentFactory):
         tools: list[BaseTool] = []
 
         if prompt is None:
-            prompt = BASIC_AGENT_PROMPT
-
-        prompt = PII_PRELUDE_PROMPT + prompt
+            prompt = PII_PRELUDE_PROMPT + BASIC_AGENT_PROMPT
 
         agent: CompiledStateGraph = create_react_agent(
             name="basic_agent",

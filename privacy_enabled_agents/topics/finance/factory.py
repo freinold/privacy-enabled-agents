@@ -79,9 +79,7 @@ class FinanceAgentFactory(AgentFactory):
         ]
 
         if prompt is None:
-            prompt = FINANCE_AGENT_PROMPT
-
-        prompt = PII_PRELUDE_PROMPT + prompt
+            prompt = PII_PRELUDE_PROMPT + FINANCE_AGENT_PROMPT
 
         agent = create_react_agent(
             name="finance_agent",

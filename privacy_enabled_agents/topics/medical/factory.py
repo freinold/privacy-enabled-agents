@@ -82,9 +82,7 @@ class MedicalAgentFactory(AgentFactory):
         ]
 
         if prompt is None:
-            prompt = MEDICAL_AGENT_PROMPT
-
-        prompt = PII_PRELUDE_PROMPT + prompt
+            prompt = PII_PRELUDE_PROMPT + MEDICAL_AGENT_PROMPT
 
         agent: CompiledStateGraph = create_react_agent(
             name="medical_agent",

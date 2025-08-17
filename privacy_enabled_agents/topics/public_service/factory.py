@@ -92,9 +92,7 @@ class PublicServiceAgentFactory(AgentFactory):
         ]
 
         if prompt is None:
-            prompt = PUBLIC_SERVICE_AGENT_PROMPT
-
-        prompt = PII_PRELUDE_PROMPT + prompt
+            prompt = PII_PRELUDE_PROMPT + PUBLIC_SERVICE_AGENT_PROMPT
 
         agent: CompiledStateGraph = create_react_agent(
             name="public_service_agent",

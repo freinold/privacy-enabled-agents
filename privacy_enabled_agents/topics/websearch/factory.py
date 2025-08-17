@@ -32,9 +32,7 @@ class WebSearchAgentFactory(AgentFactory):
         ]
 
         if prompt is None:
-            prompt = WEBSEARCH_AGENT_PROMPT
-
-        prompt = PII_PRELUDE_PROMPT + prompt
+            prompt = PII_PRELUDE_PROMPT + WEBSEARCH_AGENT_PROMPT
 
         chat_model_with_tools = chat_model.bind_tools(
             tools,
