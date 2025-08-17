@@ -1,3 +1,4 @@
+from logging import Logger, getLogger
 from typing import Literal
 
 from langchain_core.language_models import BaseChatModel
@@ -25,99 +26,87 @@ from privacy_enabled_agents.topics import (
     WebSearchAgentFactory,
 )
 
-AgentFactoryMap: dict[Literal["basic", "websearch", "financial", "medical", "public service"], type[AgentFactory]] = {
+from .config import PrivacyAgentConfig, PrivacyAgentConfigDict
+
+logger: Logger = getLogger(__name__)
+
+AgentFactoryMap: dict[Literal["basic", "websearch", "finance", "medical", "public-service"], type[AgentFactory]] = {
     "basic": BasicAgentFactory,
-    "financial": FinanceAgentFactory,
+    "finance": FinanceAgentFactory,
     "medical": MedicalAgentFactory,
-    "public service": PublicServiceAgentFactory,
+    "public-service": PublicServiceAgentFactory,
     "websearch": WebSearchAgentFactory,
 }
 
 
 def create_privacy_agent(
-    topic: Literal["basic", "websearch", "financial", "medical", "public service"] = "basic",
-    model_provider: Literal["openai", "mistral"] = "mistral",
-    model_name: str = "mistral-medium-2508",
-    model_temperature: float = 0.3,
-    detector: Literal["gliner", "regex"] = "gliner",
-    replacer: Literal["placeholder", "encryption", "hash", "pseudonym"] = "placeholder",
-    entity_store: Literal["valkey", "encryption"] = "valkey",
-    conversation_store: Literal["valkey"] = "valkey",
-    checkpointer: Literal["redis"] = "redis",
-    langfuse_enabled: bool = True,
-    prompt: str | None = None,
+    config: PrivacyAgentConfig | PrivacyAgentConfigDict = PrivacyAgentConfig(),
 ) -> tuple[CompiledStateGraph, PrivacyEnabledChatModel]:
     """Create a privacy agent.
 
     Args:
-        topic (Literal["basic", "websearch", "financial", "medical", "public service"], optional): The topic of the agent. Defaults to "basic".
-        model_provider (Literal["openai", "mistral"], optional): The model provider to use. Defaults to "mistral".
-        model_name (str, optional): The name of the model to use. Defaults to "mistral-medium-2508".
-        detector (Literal["gliner", "regex"], optional): The detector to use. Defaults to "gliner".
-        replacer (Literal["placeholder", "encryption", "hash", "pseudonym"], optional): The replacer to use. Defaults to "placeholder".
-        entity_store (Literal["valkey", "encryption"], optional): The entity store to use. Defaults to "valkey".
-        conversation_store (Literal["valkey"], optional): The conversation store to use. Defaults to "valkey".
-        checkpointer (Literal["redis"], optional): The checkpointer to use. Defaults to "redis".
-        langfuse_enabled (bool, optional): Whether to enable LangFuse integration. Defaults to True.
-        prompt (str | None, optional): The prompt override to use for the agent. Defaults to None.
+        config (PrivacyAgentConfig): The configuration for the privacy agent.
 
     Raises:
         ValueError: If one of the parameters is unsupported.
         RuntimeError: If the agent creation fails.
 
     Returns:
-        CompiledStateGraph: _description_
+        CompiledStateGraph: The compiled state graph for the privacy agent.
     """
+    if isinstance(config, dict):
+        config = PrivacyAgentConfig.model_validate(config)
+
     # Agent factory lookup
-    agent_factory: type[AgentFactory] | None = AgentFactoryMap.get(topic)
+    agent_factory: type[AgentFactory] | None = AgentFactoryMap.get(config.topic)
     if agent_factory is None:
-        raise ValueError(f"Unsupported agent topic: {topic}")
+        raise ValueError(f"Unsupported agent topic: {config.topic}")
 
     supported_entities: set[str] = agent_factory.supported_entities()
 
     # Chat model creation
     chat_model: BaseChatModel
-    match model_provider:
+    match config.model_provider:
         case "openai":
             from langchain_openai import ChatOpenAI
 
-            chat_model = ChatOpenAI(model=model_name, temperature=model_temperature)
+            chat_model = ChatOpenAI(model=config.model_name, temperature=config.model_temperature)
         case "mistral":
             from langchain_mistralai import ChatMistralAI
 
-            chat_model = ChatMistralAI(model=model_name, temperature=model_temperature)  # type: ignore
+            chat_model = ChatMistralAI(model=config.model_name, temperature=config.model_temperature)  # type: ignore
         case _:
-            raise ValueError(f"Unsupported model provider: {model_provider}")
+            raise ValueError(f"Unsupported model provider: {config.model_provider}")
 
     # Detector creation
     detector_instance: BaseDetector
-    match detector:
+    match config.detector:
         case "gliner":
             detector_instance = RemoteGlinerDetector(supported_entities=supported_entities)
         case "regex":
             detector_instance = RegexDetector()
         case _:
-            raise ValueError(f"Unsupported detector: {detector}")
+            raise ValueError(f"Unsupported detector: {config.detector}")
 
     # Entity store creation
     entity_store_instance: BaseEntityStorage
-    match entity_store:
+    match config.entity_store:
         case "valkey":
             entity_store_instance = ValkeyEntityStorage(db=0)
         case "encryption":
-            if replacer != "encryption":
+            if config.replacer != "encryption":
                 raise ValueError("Encryption entity store requires 'encryption' replacer")
             entity_store_instance = EncryptionEntityStorage()
         case _:
-            raise ValueError(f"Unsupported entity store: {entity_store}")
+            raise ValueError(f"Unsupported entity store: {config.entity_store}")
 
     # Replacer creation
     replacer_instance: BaseReplacer
-    match replacer:
+    match config.replacer:
         case "placeholder":
             replacer_instance = PlaceholderReplacer(entity_storage=entity_store_instance)
         case "encryption":
-            if entity_store != "encryption":
+            if config.entity_store != "encryption":
                 raise ValueError("Encryption replacer requires 'encryption' entity store")
             replacer_instance = MockEncryptionReplacer(entity_storage=entity_store_instance)
         case "hash":
@@ -125,14 +114,14 @@ def create_privacy_agent(
         case "pseudonym":
             replacer_instance = PseudonymReplacer(entity_storage=entity_store_instance)
         case _:
-            raise ValueError(f"Unsupported replacer: {replacer}")
+            raise ValueError(f"Unsupported replacer: {config.replacer}")
 
     conversation_store_instance: BaseConversationStorage
-    match conversation_store:
+    match config.conversation_store:
         case "valkey":
             conversation_store_instance = ValkeyConversationStorage(db=1)
         case _:
-            raise ValueError(f"Unsupported conversation store: {conversation_store}")
+            raise ValueError(f"Unsupported conversation store: {config.conversation_store}")
 
     # Create the privacy-enabled chat model
     privacy_chat_model = PrivacyEnabledChatModel(
@@ -144,7 +133,7 @@ def create_privacy_agent(
 
     # Checkpointer creation
     checkpointer_instance: BaseCheckpointSaver
-    match checkpointer:
+    match config.checkpointer:
         case "redis":
             checkpointer_instance = RedisSaver(
                 redis_url="redis://localhost:6380",
@@ -155,11 +144,12 @@ def create_privacy_agent(
             )
             checkpointer_instance.setup()
         case _:
-            raise ValueError(f"Unsupported checkpointer: {checkpointer}")
+            raise ValueError(f"Unsupported checkpointer: {config.checkpointer}")
 
     # Langfuse setup
-    config: RunnableConfig
-    if langfuse_enabled:
+    runnable_config: RunnableConfig
+    system_prompt: str | None
+    if config.langfuse_enabled:
         from langfuse import Langfuse, get_client  # type: ignore
         from langfuse.langchain import CallbackHandler
 
@@ -168,16 +158,27 @@ def create_privacy_agent(
             raise RuntimeError("Langfuse authentication failed. Please check your configuration.")
 
         langfuse_handler = CallbackHandler()
-        config = RunnableConfig(callbacks=[langfuse_handler])
+        runnable_config = RunnableConfig(callbacks=[langfuse_handler])
+
+        # System prompt retrieval
+        if config.system_prompt is None:
+            try:
+                system_prompt = langfuse.get_prompt(name=config.topic).prompt
+            except Exception as e:
+                logger.warning(f"Failed to get Langfuse prompt: {e}")
+                system_prompt = None
+        else:
+            system_prompt = config.system_prompt
     else:
-        config = RunnableConfig()
+        system_prompt = config.system_prompt
+        runnable_config = RunnableConfig()
 
     # Create the agent
     agent: CompiledStateGraph = agent_factory.create(
         chat_model=privacy_chat_model,
         checkpointer=checkpointer_instance,
-        runnable_config=config,
-        prompt=prompt,
+        runnable_config=runnable_config,
+        prompt=system_prompt,
     )
 
     return agent, privacy_chat_model
