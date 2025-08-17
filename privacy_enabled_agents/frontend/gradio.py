@@ -114,10 +114,10 @@ A professional financial assistant and banking advisor for secure banking operat
 
 
 def create_gradio_interface() -> gr.Blocks:
-    # Custom CSS with subtle radial gradient background
+    # Custom CSS with subtle diagonal gradient background
     css = """
     .gradio-container {
-        background: radial-gradient(ellipse at center, #0D9488 0%, #1a2332 70%, #1F2937 100%);
+        background: linear-gradient(135deg, #1F2937 0%, #1a2332 30%, #0f4f47 100%);
         min-height: 100vh;
     }
     """
@@ -126,22 +126,26 @@ def create_gradio_interface() -> gr.Blocks:
         demo.title = "Privacy Enabled Agents"
         gr.Markdown("## Privacy Enabled Agents")
 
-        basic_agent, basic_chat_model = create_privacy_agent(
-            "basic",
-        )
+        basic_agent, basic_chat_model = create_privacy_agent({"topic": "basic"})
         basic_chat_fn = create_chat_function("basic", basic_agent, basic_chat_model)
 
-        websearch_agent, websearch_chat_model = create_privacy_agent("websearch", model_provider="openai", model_name="gpt-4.1")
+        websearch_agent, websearch_chat_model = create_privacy_agent(
+            {
+                "topic": "websearch",
+                "model_provider": "openai",
+                "model_name": "gpt-4.1",
+            }
+        )
         websearch_chat_fn = create_chat_function("websearch", websearch_agent, websearch_chat_model)
 
-        medical_agent, medical_chat_model = create_privacy_agent("medical")
+        medical_agent, medical_chat_model = create_privacy_agent({"topic": "medical"})
         medical_chat_fn = create_chat_function("medical", medical_agent, medical_chat_model)
 
-        public_service_agent, public_service_chat_model = create_privacy_agent("public service")
-        public_service_chat_fn = create_chat_function("public service", public_service_agent, public_service_chat_model)
+        public_service_agent, public_service_chat_model = create_privacy_agent({"topic": "public-service"})
+        public_service_chat_fn = create_chat_function("public-service", public_service_agent, public_service_chat_model)
 
-        financial_agent, financial_chat_model = create_privacy_agent("financial")
-        financial_chat_fn = create_chat_function("financial", financial_agent, financial_chat_model)
+        financial_agent, financial_chat_model = create_privacy_agent({"topic": "finance"})
+        financial_chat_fn = create_chat_function("finance", financial_agent, financial_chat_model)
 
         browser_state = gr.BrowserState(storage_key="privacy_agent_session")
 
