@@ -21,7 +21,7 @@ dependencies = [
     "langgraph-checkpoint-redis==0.1.1",
     "stamina==25.1.0",
     "langchain-mistralai==0.2.11",
-    "langgraph-cli==0.3.6",
+    "langgraph-cli==0.3.8",
     "schwifty==2025.7.0",
     "geopy==2.4.1",
     "ddgs==9.5.4",
