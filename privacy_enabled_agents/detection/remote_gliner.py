@@ -23,7 +23,7 @@ class RemoteGlinerDetector(BaseDetector):
     """
 
     _client: Client
-    _default_threshold: float
+    _threshold: float
     _model_id: str
 
     def __init__(
@@ -31,6 +31,7 @@ class RemoteGlinerDetector(BaseDetector):
         base_url: str = "http://localhost:8081",
         api_key: str | None = None,
         supported_entities: set[str] | None = None,
+        threshold: float | None = None,
     ) -> None:
         info_url: str = urljoin(base=base_url, url="/api/info")
         response: Response = get(info_url)
@@ -48,25 +49,29 @@ class RemoteGlinerDetector(BaseDetector):
             supported_entities=supported_entities,
         )
         self._model_id = info_response.model_id
-        self._default_threshold = info_response.default_threshold
         self._client = Client(
             base_url=base_url,
             headers={"Authorization": f"Bearer {api_key}"} if api_key else {},
         )
 
+        if threshold is not None:
+            if not (0.0 <= threshold <= 1.0):
+                raise ValueError("Threshold must be between 0.0 and 1.0")
+            self._threshold = threshold
+        else:
+            self._threshold = info_response.default_threshold
+
     def invoke(
         self,
         input: str,
         config: RunnableConfig | None = None,
-        *,
-        threshold: float | None = None,
         **kwargs: Any,
     ) -> list[Entity]:
         invoke_response: RemoteInvokeResponse = self._call_api_and_validate(
             path="/api/invoke",
             json={
                 "text": input,
-                "threshold": threshold or self._default_threshold,
+                "threshold": self._threshold,
                 "entity_types": list(self.supported_entities),
             },
             validation_model=RemoteInvokeResponse,
@@ -77,15 +82,13 @@ class RemoteGlinerDetector(BaseDetector):
         self,
         inputs: Sequence[str],
         config: RunnableConfig | list[RunnableConfig] | None = None,
-        *,
-        threshold: float | None = None,
         **kwargs: Any,
     ) -> list[list[Entity]]:
         batch_response: RemoteBatchResponse = self._call_api_and_validate(
             path="/api/batch",
             json={
                 "texts": inputs,
-                "threshold": threshold or self._default_threshold,
+                "threshold": self._threshold,
                 "entity_types": list(self.supported_entities),
             },
             validation_model=RemoteBatchResponse,

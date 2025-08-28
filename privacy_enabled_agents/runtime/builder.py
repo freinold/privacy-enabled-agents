@@ -82,7 +82,7 @@ def create_privacy_agent(
     detector_instance: BaseDetector
     match config.detector:
         case "gliner":
-            detector_instance = RemoteGlinerDetector(supported_entities=supported_entities)
+            detector_instance = RemoteGlinerDetector(supported_entities=supported_entities, threshold=config.detector_threshold)
         case "regex":
             detector_instance = RegexDetector()
         case _:
