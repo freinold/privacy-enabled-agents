@@ -1,5 +1,6 @@
 import re
-from typing import Any, Literal, Sequence
+from collections.abc import Sequence
+from typing import Any, Literal
 
 from langchain_core.runnables.config import RunnableConfig
 

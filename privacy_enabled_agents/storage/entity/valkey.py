@@ -218,8 +218,7 @@ class ValkeyEntityStorage(BaseEntityStorage):
             if contexts_data is not None:
                 for thread_id_bytes in contexts_data:
                     ctx_id = UUID(thread_id_bytes.decode("utf-8"))
-                    for entry in self.iterate_entries(ctx_id):
-                        yield entry
+                    yield from self.iterate_entries(ctx_id)
 
     def close(self) -> None:
         self.client.close()
