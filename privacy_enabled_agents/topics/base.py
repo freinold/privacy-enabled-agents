@@ -18,6 +18,7 @@ class AgentFactory(ABC):
         checkpointer: BaseCheckpointSaver,
         runnable_config: RunnableConfig,
         prompt: str | None = None,
+        pii_guarding_enabled: bool = True,
     ) -> CompiledStateGraph:
         pass
 

@@ -71,6 +71,7 @@ class MedicalAgentFactory(AgentFactory):
         checkpointer: BaseCheckpointSaver,
         runnable_config: RunnableConfig,
         prompt: str | None = None,
+        pii_guarding_enabled: bool = True,
     ) -> CompiledStateGraph:
         tools: list[BaseTool] = [
             GetCoordinateFromAdressTool(),
@@ -82,11 +83,19 @@ class MedicalAgentFactory(AgentFactory):
         ]
 
         if prompt is None:
-            prompt = PII_PRELUDE_PROMPT + MEDICAL_AGENT_PROMPT
+            prompt = MEDICAL_AGENT_PROMPT
+
+        if pii_guarding_enabled:
+            prompt = PII_PRELUDE_PROMPT + "\n" + prompt
+
+        chat_model_with_tools = chat_model.bind_tools(
+            tools,
+            parallel_tool_calls=False,
+        )
 
         agent: CompiledStateGraph = create_react_agent(
             name="medical_agent",
-            model=chat_model,
+            model=chat_model_with_tools,
             tools=tools,
             prompt=prompt,
             checkpointer=checkpointer,

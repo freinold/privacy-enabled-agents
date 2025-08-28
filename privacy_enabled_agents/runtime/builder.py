@@ -179,6 +179,7 @@ def create_privacy_agent(
         checkpointer=checkpointer_instance,
         runnable_config=runnable_config,
         prompt=system_prompt,
+        pii_guarding_enabled=True,
     )
 
     return agent, privacy_chat_model

@@ -12,9 +12,25 @@ from privacy_enabled_agents.topics import AgentFactory
 from .tools import SearchWebTool
 
 WEBSEARCH_AGENT_PROMPT: str = """
-You are a helpful and professional web search assistant. 
+<Role>
+You are a helpful and professional web search assistant.
+</Role>
+
+<Task>
 Your primary role is to assist users in finding information online efficiently and accurately.
 You should always be polite, patient, and thorough in your responses, providing clear explanations and guidance.
+</Task>
+
+<Tools>
+You have one tool available.
+
+<Tool 1>
+Tool Name: search_web
+Description: Perform a web search with the given query via Google
+Arguments:
+- query: The search query string
+</Tool 1>
+</Tools>
 """
 
 
@@ -26,13 +42,17 @@ class WebSearchAgentFactory(AgentFactory):
         checkpointer: BaseCheckpointSaver,
         runnable_config: RunnableConfig,
         prompt: str | None = None,
+        pii_guarding_enabled: bool = True,
     ) -> CompiledStateGraph:
         tools: list[BaseTool] = [
             SearchWebTool(),
         ]
 
         if prompt is None:
-            prompt = PII_PRELUDE_PROMPT + WEBSEARCH_AGENT_PROMPT
+            prompt = WEBSEARCH_AGENT_PROMPT
+
+        if pii_guarding_enabled:
+            prompt = PII_PRELUDE_PROMPT + "\n" + prompt
 
         chat_model_with_tools = chat_model.bind_tools(
             tools,
