@@ -183,3 +183,94 @@ def create_privacy_agent(
     )
 
     return agent, privacy_chat_model
+
+
+def create_agent(
+    config: PrivacyAgentConfig | PrivacyAgentConfigDict = PrivacyAgentConfig(),
+) -> CompiledStateGraph:
+    """Create a non-privacy agent using the same config and factories as the privacy agent.
+
+    Args:
+        config (PrivacyAgentConfig): The configuration for the agent.
+
+    Raises:
+        ValueError: If one of the parameters is unsupported.
+        RuntimeError: If the agent creation fails.
+
+    Returns:
+        CompiledStateGraph: The compiled state graph for the agent.
+    """
+    if isinstance(config, dict):
+        config = PrivacyAgentConfig.model_validate(config)
+
+    # Agent factory lookup
+    agent_factory: type[AgentFactory] | None = AgentFactoryMap.get(config.topic)
+    if agent_factory is None:
+        raise ValueError(f"Unsupported agent topic: {config.topic}")
+
+    # Chat model creation (without privacy wrapper)
+    chat_model: BaseChatModel
+    match config.model_provider:
+        case "openai":
+            from langchain_openai import ChatOpenAI
+
+            chat_model = ChatOpenAI(model=config.model_name, temperature=config.model_temperature)
+        case "mistral":
+            from langchain_mistralai import ChatMistralAI
+
+            chat_model = ChatMistralAI(model=config.model_name, temperature=config.model_temperature)  # type: ignore
+        case _:
+            raise ValueError(f"Unsupported model provider: {config.model_provider}")
+
+    # Checkpointer creation
+    checkpointer_instance: BaseCheckpointSaver
+    match config.checkpointer:
+        case "redis":
+            checkpointer_instance = RedisSaver(
+                redis_url="redis://localhost:6380",
+                ttl={
+                    "default_ttl": 3600,
+                    "refresh_on_read": True,
+                },
+            )
+            checkpointer_instance.setup()
+        case _:
+            raise ValueError(f"Unsupported checkpointer: {config.checkpointer}")
+
+    # Langfuse setup
+    runnable_config: RunnableConfig
+    system_prompt: str | None
+    if config.langfuse_enabled:
+        from langfuse import Langfuse, get_client  # type: ignore
+        from langfuse.langchain import CallbackHandler
+
+        langfuse: Langfuse = get_client()
+        if not langfuse.auth_check():
+            raise RuntimeError("Langfuse authentication failed. Please check your configuration.")
+
+        langfuse_handler = CallbackHandler()
+        runnable_config = RunnableConfig(callbacks=[langfuse_handler])
+
+        # System prompt retrieval
+        if config.system_prompt is None:
+            try:
+                system_prompt = langfuse.get_prompt(name=config.topic).prompt
+            except Exception as e:
+                logger.warning(f"Failed to get Langfuse prompt: {e}")
+                system_prompt = None
+        else:
+            system_prompt = config.system_prompt
+    else:
+        system_prompt = config.system_prompt
+        runnable_config = RunnableConfig()
+
+    # Create the agent (using the regular chat model instead of privacy-enabled one)
+    agent: CompiledStateGraph = agent_factory.create(
+        chat_model=chat_model,
+        checkpointer=checkpointer_instance,
+        runnable_config=runnable_config,
+        prompt=system_prompt,
+        pii_guarding_enabled=False,
+    )
+
+    return agent
