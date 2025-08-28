@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from random import random
 from typing import Annotated, Literal
 
 from langchain_core.messages import ToolMessage
@@ -9,7 +8,14 @@ from langgraph.types import Command
 from pydantic import BaseModel, Field
 from schwifty import IBAN
 
-from .model import Account, FinanceState
+from .model import Account, FinanceState, Transfer
+
+
+class CheckBalanceInput(BaseModel):
+    """Input schema for the check_balance tool."""
+
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[FinanceState, InjectedState]
 
 
 class CheckBalanceTool(BaseTool):
@@ -17,6 +23,7 @@ class CheckBalanceTool(BaseTool):
 
     name: str = "check_balance"
     description: str = "Check the balance of an account."
+    args_schema: ArgsSchema | None = CheckBalanceInput
     return_direct: bool = False
     response_format: Literal["content", "content_and_artifact"] = "content"
 
@@ -26,7 +33,7 @@ class CheckBalanceTool(BaseTool):
         if not account:
             raise ValueError(f"Account {state.user_iban} not found.")
 
-        return f"Balance for account {state.user_iban}: {account['balance']} {account['currency']}."
+        return f"Balance for account {state.user_iban}: {account.balance} {account.currency}."
 
 
 class TransferMoneyInput(BaseModel):
@@ -34,6 +41,10 @@ class TransferMoneyInput(BaseModel):
 
     amount: float = Field(description="The amount of money to transfer.", ge=0.01)
     destination_iban: IBAN = Field(description="The IBAN of the account to transfer money to.")
+
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[FinanceState, InjectedState]
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class TransferMoneyTool(BaseTool):
@@ -60,25 +71,21 @@ class TransferMoneyTool(BaseTool):
         if not destination_account:
             raise ValueError(f"Destination account {destination_iban} not found.")
 
-        if source_account["balance"] + source_account["credit_limit"] < amount:
+        if source_account.balance + source_account.credit_limit < amount:
             raise ValueError(f"Insufficient funds / credit in source account {state.user_iban}.")
 
-        # Simulate a transfer delay
-        if random() < 0.1:
-            raise ValueError("Transfer failed due to a network error. Please try again later.")
-
         # Update balances
-        source_account["balance"] -= amount
-        destination_account["balance"] += amount
+        source_account.balance -= amount
+        destination_account.balance += amount
 
         # Log the transfer
         state.transfers.append(
-            {
-                "source_iban": state.user_iban,
-                "destination_iban": destination_iban,
-                "amount": amount,
-                "timestamp": datetime.now(),
-            }
+            Transfer(
+                source_iban=state.user_iban,
+                destination_iban=destination_iban,
+                amount=amount,
+                timestamp=datetime.now(),
+            )
         )
 
         state.accounts[state.user_iban] = source_account
@@ -105,6 +112,10 @@ class IncreaseCreditLimitInput(BaseModel):
     iban: IBAN = Field(description="The IBAN of the account to increase the credit limit for.")
     amount: float = Field(description="The amount to increase the credit limit by.", ge=0.01)
 
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[FinanceState, InjectedState]
+    tool_call_id: Annotated[str, InjectedToolCallId]
+
 
 class IncreaseCreditLimitTool(BaseTool):
     """Tool to increase the credit limit of an account."""
@@ -128,23 +139,23 @@ class IncreaseCreditLimitTool(BaseTool):
             raise ValueError(f"Account {iban} not found.")
 
         # The account must be at least 30 days old to increase credit limit
-        if account["account_created"] > datetime.now() - timedelta(days=30):
+        if account.account_created > datetime.now() - timedelta(days=30):
             raise ValueError(f"Account {iban} must be at least 30 days old to increase credit limit.")
 
         # The new credit limit must not exceed 10,000
-        if account["credit_limit"] + amount > 10000:
+        if account.credit_limit + amount > 10000:
             raise ValueError(f"Credit limit for account {iban} exceeded.")
 
         # The account holder must be at least 18 years old
-        if account["holder_age"] < 18:
+        if account.holder_age < 18:
             raise ValueError(f"Account holder for {iban} must be at least 18 years old to increase credit limit.")
 
         # The new credit limit must not exceed the triple of the monthly income
-        if account["monthly_income"] * 3 < account["credit_limit"] + amount:
+        if account.monthly_income * 3 < account.credit_limit + amount:
             raise ValueError(f"Insufficient income to increase credit limit for account {iban}.")
 
         # If all checks pass, increase the credit limit
-        account["credit_limit"] += amount
+        account.credit_limit += amount
         state.accounts[iban] = account
 
         return Command(
@@ -152,7 +163,7 @@ class IncreaseCreditLimitTool(BaseTool):
                 "accounts": state.accounts,
                 "messages": [
                     ToolMessage(
-                        content=f"Credit limit for account {iban} increased by {amount} to {account['credit_limit']}",
+                        content=f"Credit limit for account {iban} increased by {amount} to {account.credit_limit}",
                         tool_call_id=tool_call_id,
                         status="success",
                     )
