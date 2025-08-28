@@ -1,4 +1,4 @@
-from .base import AgentFactory
+from .base import AgentFactory, EvalTaskCreator
 from .basic import BasicAgentFactory
 from .finance import FinanceAgentFactory
 from .medical import MedicalAgentFactory
@@ -12,4 +12,5 @@ __all__: list[str] = [
     "MedicalAgentFactory",
     "PublicServiceAgentFactory",
     "WebSearchAgentFactory",
+    "EvalTaskCreator",
 ]

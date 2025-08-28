@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any, TypedDict
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
@@ -23,3 +24,15 @@ class AgentFactory(ABC):
     @classmethod
     def supported_entities(cls) -> set[str]:
         return BASE_ENTITIES
+
+
+class EvalTask(TypedDict):
+    instruction: str
+    additional_kwargs: dict[str, Any]
+
+
+class EvalTaskCreator(ABC):
+    @classmethod
+    @abstractmethod
+    def create_eval_task(cls) -> EvalTask:
+        pass
