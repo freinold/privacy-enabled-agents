@@ -1,7 +1,8 @@
+from collections.abc import Generator
 from datetime import date, datetime
 from functools import lru_cache
 from random import randint
-from typing import Annotated, Any, Generator, Literal
+from typing import Annotated, Any, Literal
 
 from geopy import Location
 from geopy.distance import distance
@@ -97,6 +98,9 @@ class FindNearbyMedicalFacilitiesInput(BaseModel):
         description="The location as a pair of latitude and longitude coordinates to search for medical facilities."
     )
 
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[MedicalState, InjectedState]
+
 
 class FindNearbyMedicalFacilitiesTool(BaseTool):
     """Tool to find nearby medical facilities like hospitals, doctors offices, or pharmacies."""
@@ -141,6 +145,10 @@ class BookMedicalTransportInput(BaseModel):
     patient_medical_insurance_id: GermanMedicalInsuranceID = Field(
         description="The german medical insurance ID of the patient who will be transported."
     )
+
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[MedicalState, InjectedState]
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class BookMedicalTransportTool(BaseTool):
@@ -221,6 +229,9 @@ class ListMedicalTransportsInput(BaseModel):
     )
     patient_dob: date = Field(description="The date of birth of the patient who will be transported.")
 
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[MedicalState, InjectedState]
+
 
 class ListMedicalTransportsTool(BaseTool):
     """Tool to list all medical transports for a given patient."""
@@ -250,6 +261,10 @@ class CancelMedicalTransportInput(BaseModel):
         max_length=6,
         min_length=6,
     )
+
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[MedicalState, InjectedState]
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class CancelMedicalTransportTool(BaseTool):
