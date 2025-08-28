@@ -52,14 +52,6 @@ def run_evaluation(config_filepath: FilePath) -> None:
 
     logger.info(f"Starting evaluation with config: {config_filepath}")
 
-    # Create main eval_results directory and subdirectory for this evaluation run
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    main_eval_dir = "eval_results"
-    os.makedirs(main_eval_dir, exist_ok=True)
-    output_dir = os.path.join(main_eval_dir, f"{eval_config.agent_config.topic}_{timestamp}")
-    os.makedirs(output_dir, exist_ok=True)
-    logger.info(f"Created output directory: {output_dir}")
-
     # Create privacy-enabled agent
     privacy_agent: CompiledStateGraph
     privacy_chat_model: PrivacyEnabledChatModel
@@ -105,6 +97,14 @@ def run_evaluation(config_filepath: FilePath) -> None:
             results.append(non_privacy_result)
 
     result_df = pd.DataFrame(results)
+
+    # Create main eval_results directory and subdirectory for this evaluation run
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    main_eval_dir = "eval_results"
+    os.makedirs(main_eval_dir, exist_ok=True)
+    output_dir = os.path.join(main_eval_dir, f"{eval_config.agent_config.topic}_{timestamp}")
+    os.makedirs(output_dir, exist_ok=True)
+    logger.info(f"Created output directory: {output_dir}")
 
     # Save results based on whether baseline comparison is enabled
     if eval_config.enable_baseline_comparison:
