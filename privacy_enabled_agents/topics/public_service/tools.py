@@ -15,17 +15,25 @@ from .model import (
 )
 
 
+class CheckParkingPermitsInput(BaseModel):
+    """Input schema for the check_parking_permits tool."""
+
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[PublicServiceState, InjectedState]
+
+
 class CheckParkingPermitsTool(BaseTool):
     """Tool to check the current citizen's parking permits."""
 
     name: str = "check_parking_permits"
     description: str = "Check all parking permits for the current citizen."
+    args_schema: ArgsSchema | None = CheckParkingPermitsInput
     return_direct: bool = False
     response_format: Literal["content", "content_and_artifact"] = "content"
 
     def _run(self, state: Annotated[PublicServiceState, InjectedState]) -> str:
         citizen_permits: list[ParkingPermit] = [
-            permit for permit in state.parking_permits.values() if permit["citizen_id"] == state.current_citizen_id
+            permit for permit in state.parking_permits.values() if permit["citizen_id_number"] == state.current_citizen_id
         ]
 
         if not citizen_permits:
@@ -46,12 +54,12 @@ class ApplyParkingPermitInput(BaseModel):
     """Input schema for the apply_parking_permit tool."""
 
     permit_type: Literal["residential", "visitor", "business"] = Field(description="The type of parking permit to apply for.")
-    vehicle_plate: str = Field(
-        description="The license plate of the vehicle.",
-        min_length=3,
-        max_length=10,
-    )
-    zone: str = Field(description="The parking zone for the permit.", pattern="^Zone [A-Z]$")
+    vehicle_plate: str = Field(description="The vehicle's license plate.")
+    zone: Literal["Altstadt", "Schwabing", "Bogenhausen", "Maxvorstadt"] = Field(description="The parking zone for the permit.")
+
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[PublicServiceState, InjectedState]
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class ApplyParkingPermitTool(BaseTool):
@@ -81,7 +89,7 @@ class ApplyParkingPermitTool(BaseTool):
             (
                 permit
                 for permit in state.parking_permits.values()
-                if permit["citizen_id"] == state.current_citizen_id
+                if permit["citizen_id_number"] == state.current_citizen_id
                 and permit["vehicle_plate"] == vehicle_plate
                 and permit["status"] == "active"
             ),
@@ -113,7 +121,7 @@ class ApplyParkingPermitTool(BaseTool):
         # Create new permit
         new_permit: ParkingPermit = {
             "permit_id": new_permit_id,
-            "citizen_id": state.current_citizen_id,
+            "citizen_id_number": state.current_citizen_id,
             "permit_type": permit_type,
             "vehicle_plate": vehicle_plate,
             "start_date": datetime.now(),
@@ -149,6 +157,10 @@ class PayParkingPermitFeeInput(BaseModel):
 
     permit_id: str = Field(description="The ID of the parking permit to pay for.")
 
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[PublicServiceState, InjectedState]
+    tool_call_id: Annotated[str, InjectedToolCallId]
+
 
 class PayParkingPermitFeeTool(BaseTool):
     """Tool to pay the fee for a parking permit."""
@@ -170,7 +182,7 @@ class PayParkingPermitFeeTool(BaseTool):
         if not permit:
             raise ValueError(f"Parking permit {permit_id} not found.")
 
-        if permit["citizen_id"] != state.current_citizen_id:
+        if permit["citizen_id_number"] != state.current_citizen_id:
             raise ValueError(f"Permit {permit_id} does not belong to current citizen.")
 
         if permit["fee_paid"]:
@@ -216,6 +228,10 @@ class RenewParkingPermitInput(BaseModel):
 
     permit_id: str = Field(description="The ID of the parking permit to renew.")
 
+    # BUG: These shouldn't be needed but are required for injection to work
+    state: Annotated[PublicServiceState, InjectedState]
+    tool_call_id: Annotated[str, InjectedToolCallId]
+
 
 class RenewParkingPermitTool(BaseTool):
     """Tool to renew an existing parking permit."""
@@ -237,7 +253,7 @@ class RenewParkingPermitTool(BaseTool):
         if not permit:
             raise ValueError(f"Parking permit {permit_id} not found.")
 
-        if permit["citizen_id"] != state.current_citizen_id:
+        if permit["citizen_id_number"] != state.current_citizen_id:
             raise ValueError(f"Permit {permit_id} does not belong to current citizen.")
 
         if permit["status"] not in ["active", "expired"]:
