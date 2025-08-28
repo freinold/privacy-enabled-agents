@@ -16,7 +16,7 @@ dependencies = [
     "pydantic-extra-types==2.10.5",
     "phonenumbers==9.0.12",
     "valkey==6.1.1",
-    "faker==37.5.3",
+    "faker==37.6.0",
     "cryptography==45.0.6",
     "langgraph-checkpoint-redis==0.1.1",
     "stamina==25.1.0",
