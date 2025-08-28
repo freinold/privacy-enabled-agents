@@ -1,4 +1,6 @@
-from typing import Any
+import random
+import string
+from typing import Any, Self
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import PydanticCustomError, core_schema
@@ -91,3 +93,34 @@ class GermanMedicalInsuranceID(str):
                 message_template="Invalid ID checksum {calculated_checksum}, expected {checksum}",
                 context={"calculated_checksum": calculated_checksum, "checksum": checksum},
             )
+
+    @classmethod
+    def random(cls) -> Self:
+        """Generate a random valid German medical insurance ID.
+
+        Returns:
+            A new instance with a randomly generated valid insurance ID.
+        """
+        # Generate random first letter
+        first_letter = random.choice(string.ascii_uppercase)
+
+        # Generate 8 random digits (9th digit will be the checksum)
+        other_digits = "".join(random.choices(string.digits, k=8))
+
+        # Calculate checksum
+        first_letter_value = ord(first_letter) - ord("A") + 1
+        first_letter_value_str = f"{first_letter_value:02}"
+
+        # Combine first letter value and the 8 random digits
+        digits = [int(digit) for digit in first_letter_value_str + other_digits]
+
+        # Calculate weighted sum for checksum
+        weights = [1, 2] * 5  # alternating 1, 2 pattern for 10 positions
+        weighted_digits_sum = sum([digit * weight for digit, weight in zip(digits, weights)])
+
+        # Calculate checksum
+        checksum = weighted_digits_sum % 10
+
+        # Create the complete ID
+        random_id = first_letter + other_digits + str(checksum)
+        return cls(random_id)
