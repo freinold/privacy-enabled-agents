@@ -6,30 +6,30 @@ readme = "README.md"
 requires-python = "==3.13.7"
 dependencies = [
     "fastapi[standard]==0.116.1",
-    "langchain-openai==0.3.31",
+    "langchain-openai==0.3.32",
     "langchain==0.3.27",
     "langgraph==0.6.6",
     "python-dotenv==1.1.1",
-    "langfuse==3.3.0",
+    "langfuse==3.3.2",
     "truststore==0.10.4",
     "pydantic==2.11.7",
     "pydantic-extra-types==2.10.5",
     "phonenumbers==9.0.12",
     "valkey==6.1.1",
-    "faker==37.5.3",
+    "faker==37.6.0",
     "cryptography==45.0.6",
     "langgraph-checkpoint-redis==0.1.1",
     "stamina==25.1.0",
     "langchain-mistralai==0.2.11",
-    "langgraph-cli==0.3.8",
+    "langgraph-cli==0.4.0",
     "schwifty==2025.7.0",
     "geopy==2.4.1",
     "ddgs==9.5.4",
-    "gradio==5.43.1",
+    "gradio==5.44.0",
     "pydantic-settings==2.10.1",
     "pyyaml==6.0.2",
     "pandas==2.3.2",
-    "orjson==3.11.2",
+    "orjson==3.11.3",
 ]
 
 [dependency-groups]
@@ -38,7 +38,7 @@ dev = [
     "pre-commit==4.3.0",
     "pytest==8.4.1",
     "pytest-asyncio==1.1.0",
-    "ruff==0.12.9",
+    "ruff==0.12.11",
 ]
 
 [tool.pytest.ini_options]
