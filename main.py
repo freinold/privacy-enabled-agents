@@ -2,19 +2,33 @@
 
 from dotenv import load_dotenv
 
+from privacy_enabled_agents.eval.runner import run_evaluation
+
 load_dotenv()
 
 # regular imports from here on
-from pydantic import AliasChoices, Field
+from typing import Self
+
+from pydantic import AliasChoices, Field, FilePath, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    evaluation: bool = Field(
-        default=False,
+    evaluation: FilePath | None = Field(
+        default=None,
         validation_alias=AliasChoices("e", "eval"),
-        description="Run an evaluation instead of the frontend",
+        description="Path to the evaluation config file. Needs to be a YAML file.",
     )
+
+    @model_validator(mode="after")
+    def validate_eval_config(self) -> Self:
+        if not self.evaluation:
+            return self
+
+        if not str(self.evaluation).lower().endswith(".yaml"):
+            raise ValueError("'evaluation' argument must be a YAML file.")
+
+        return self
 
     model_config = SettingsConfigDict(env_prefix="PEA_", cli_parse_args=True)
 
@@ -31,10 +45,8 @@ def run_frontend() -> None:
 def main() -> None:
     settings: Settings = Settings()
 
-    if settings.evaluation:
-        pass
-        # TODO: add eval options here
-
+    if settings.evaluation is not None:
+        run_evaluation(settings.evaluation)
     else:
         run_frontend()
 
