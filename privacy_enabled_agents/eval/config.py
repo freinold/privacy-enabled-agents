@@ -1,24 +1,22 @@
-from pathlib import Path
-from typing import Literal, Self
+"""Evaluation configuration for the privacy-enabled agent."""
 
-from pydantic import Field, FilePath, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 from privacy_enabled_agents.runtime import PrivacyAgentConfig
 
 
-class EvalConfig(BaseSettings):
+class EvalConfig(BaseModel):
+    """Evaluation configuration for the privacy-enabled agent."""
+
     agent_config: PrivacyAgentConfig = Field(
         default_factory=PrivacyAgentConfig,
         description="Configuration for the privacy agent.",
     )
-    eval_dataset: FilePath = Field(
-        default=Path("eval_dataset.csv"),
-        description="Path to the evaluation dataset.",
-    )
-    eval_sample: int | None = Field(
-        default=None,
-        description="Number of samples to evaluate on. If None, evaluates on the entire dataset.",
+    eval_runs: int = Field(
+        default=10,
+        description="Number of evaluation runs to perform.",
     )
     user_model_provider: Literal["openai", "mistral"] = Field(
         default="mistral",
@@ -28,17 +26,11 @@ class EvalConfig(BaseSettings):
         default="mistral-large-2508",
         description="Name of the model representing the user.",
     )
-
-    @model_validator(mode="after")
-    def validate_eval_dataset(self) -> Self:
-        if not str(self.eval_dataset).lower().endswith(".csv"):
-            raise ValueError("eval_dataset must be a CSV file.")
-        else:
-            return self
-
-    model_config = SettingsConfigDict(
-        json_file="eval_config.json",
-        json_file_encoding="utf-8",
-        yaml_file="eval_config.yaml",
-        yaml_file_encoding="utf-8",
+    max_turns: int = Field(
+        default=10,
+        description="Maximum number of conversation turns before forcing completion.",
+    )
+    enable_baseline_comparison: bool = Field(
+        default=False,
+        description="Whether to run the non-privacy baseline agent for comparison with the privacy-enabled agent.",
     )

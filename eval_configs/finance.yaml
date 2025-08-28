@@ -1,0 +1,11 @@
+agent_config:
+  topic: finance
+  model_provider: openai
+  model_name: gpt-4.1
+  model_temperature: 0
+eval_runs: 10
+user_model_provider: openai
+user_model_name: gpt-4.1-mini
+user_model_temperature: 0.2
+max_turns: 10
+enable_baseline_comparison: true
