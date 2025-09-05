@@ -9,7 +9,7 @@ from privacy_enabled_agents import PrivacyEnabledAgentState
 from privacy_enabled_agents.base import PII_PRELUDE_PROMPT
 from privacy_enabled_agents.topics import AgentFactory
 
-from .tools import SearchWebTool
+from .tools import GetCurrentDateTool, SearchWebTool
 
 WEBSEARCH_AGENT_PROMPT: str = """
 <Role>
@@ -22,7 +22,7 @@ You should always be polite, patient, and thorough in your responses, providing 
 </Task>
 
 <Tools>
-You have one tool available.
+You have two tools available.
 
 <Tool 1>
 Tool Name: search_web
@@ -30,6 +30,12 @@ Description: Perform a web search with the given query via Google
 Arguments:
 - query: The search query string
 </Tool 1>
+
+<Tool 2>
+Tool Name: get_current_date
+Description: Get the current date in YYYY-MM-DD format.
+Arguments: None
+</Tool 2>
 </Tools>
 """
 
@@ -44,9 +50,7 @@ class WebSearchAgentFactory(AgentFactory):
         prompt: str | None = None,
         pii_guarding_enabled: bool = True,
     ) -> CompiledStateGraph:
-        tools: list[BaseTool] = [
-            SearchWebTool(),
-        ]
+        tools: list[BaseTool] = [SearchWebTool(), GetCurrentDateTool()]
 
         if prompt is None:
             prompt = WEBSEARCH_AGENT_PROMPT

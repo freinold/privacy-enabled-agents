@@ -1,3 +1,4 @@
+from datetime import date
 from functools import lru_cache
 from typing import Literal
 
@@ -40,3 +41,17 @@ class SearchWebTool(BaseTool):
             max_results=5,
         )
         return results
+
+
+class GetCurrentDateTool(BaseTool):
+    """Tool to get the current date."""
+
+    name: str = "get_current_date"
+    description: str = "Get the current date in YYYY-MM-DD format."
+    args_schema: ArgsSchema | None = None
+    return_direct: bool = False
+    response_format: Literal["content", "content_and_artifact"] = "content"
+
+    def _run(self) -> str:
+        current_date: str = date.today().isoformat()
+        return current_date
