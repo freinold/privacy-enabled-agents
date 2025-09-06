@@ -77,6 +77,11 @@ class PEASettings(BaseSettings):
         validation_alias="gliner-api-url",
         description="URL of the Gliner API server.",
     )
+    poll_link: str | None = Field(
+        default=None,
+        validation_alias="poll-link",
+        description="Link to the poll for feedback.",
+    )
 
     @model_validator(mode="after")
     def validate_eval_config(self) -> Self:

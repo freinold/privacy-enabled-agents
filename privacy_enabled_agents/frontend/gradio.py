@@ -3,11 +3,14 @@ from logging import Logger, getLogger
 import gradio as gr
 import gradio.themes as gr_themes
 
+from privacy_enabled_agents import PEASettings
 from privacy_enabled_agents.frontend.helpers import create_chat_function
 from privacy_enabled_agents.runtime import create_privacy_agent
 
 # Create logger for this module
 logger: Logger = getLogger(__name__)
+
+pea_settings = PEASettings()
 
 user_chat_doc = """
 **Unterhaltungen aus Nutzersicht**<br/>
@@ -159,9 +162,10 @@ def create_gradio_interface() -> gr.Blocks:
         with gr.Sidebar(open=True):
             gr.Markdown(overview_content)
 
-        # Poll banner and button
-        gr.HTML(value=poll_banner)
-        gr.Button("An Umfrage teilnehmen 📝", link="https://freinold.eu")
+        if pea_settings.poll_link is not None:
+            # Poll banner and button
+            gr.HTML(value=poll_banner)
+            gr.Button("An Umfrage teilnehmen 📝", link=pea_settings.poll_link)
 
         basic_agent, basic_chat_model = create_privacy_agent({"topic": "basic"})
         basic_chat_fn = create_chat_function("basic", basic_agent, basic_chat_model)
