@@ -21,7 +21,7 @@ dependencies = [
     "langgraph-checkpoint-redis==0.1.1",
     "stamina==25.1.0",
     "langchain-mistralai==0.2.11",
-    "langgraph-cli==0.4.0",
+    "langgraph-cli==0.4.2",
     "schwifty==2025.7.0",
     "geopy==2.4.1",
     "ddgs==9.5.5",
@@ -36,9 +36,9 @@ dependencies = [
 dev = [
     "jupyter==1.1.1",
     "pre-commit==4.3.0",
-    "pytest==8.4.1",
+    "pytest==8.4.2",
     "pytest-asyncio==1.1.0",
-    "ruff==0.12.11",
+    "ruff==0.12.12",
 ]
 
 [tool.pytest.ini_options]
