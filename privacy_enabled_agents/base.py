@@ -1,6 +1,9 @@
+from typing import Self
+
 from langchain_core.messages import BaseMessage
 from langgraph.prebuilt.chat_agent_executor import AgentStatePydantic
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field, FilePath, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PII_PRELUDE_PROMPT = """
 <Prelude>
@@ -46,3 +49,43 @@ class PrivacyEnabledAgentState(AgentStatePydantic):
     privacy_protected_messages: list[BaseMessage] = Field(
         default_factory=list, description="Messages with PII/PHI replaced - what the LLM actually is given"
     )
+
+
+class PEASettings(BaseSettings):
+    evaluation: FilePath | None = Field(
+        default=None,
+        validation_alias=AliasChoices("e", "eval"),
+        description="Path to the evaluation config file. Needs to be a YAML file.",
+    )
+    redis_url: str = Field(
+        default="redis://localhost:6380",
+        validation_alias="redis-url",
+        description="URL of the Redis server.",
+    )
+    valkey_host: str = Field(
+        default="localhost",
+        validation_alias="valkey-host",
+        description="Host of the Valkey server.",
+    )
+    valkey_port: int = Field(
+        default=6379,
+        validation_alias="valkey-port",
+        description="Port of the Valkey server.",
+    )
+    gliner_api_url: str = Field(
+        default="http://localhost:8081",
+        validation_alias="gliner-api-url",
+        description="URL of the Gliner API server.",
+    )
+
+    @model_validator(mode="after")
+    def validate_eval_config(self) -> Self:
+        if not self.evaluation:
+            return self
+
+        if not str(self.evaluation).lower().endswith(".yaml"):
+            raise ValueError("'evaluation' argument must be a YAML file.")
+
+        return self
+
+    model_config = SettingsConfigDict(env_prefix="PEA_", cli_parse_args=True)

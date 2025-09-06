@@ -7,6 +7,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.redis import RedisSaver
 from langgraph.graph.state import CompiledStateGraph
 
+from privacy_enabled_agents import PEASettings
 from privacy_enabled_agents.chat_models import PrivacyEnabledChatModel
 from privacy_enabled_agents.detection import BaseDetector, RegexDetector, RemoteGlinerDetector
 from privacy_enabled_agents.replacement import BaseReplacer, HashReplacer, MockEncryptionReplacer, PlaceholderReplacer, PseudonymReplacer
@@ -57,6 +58,9 @@ def create_privacy_agent(
     if isinstance(config, dict):
         config = PrivacyAgentConfig.model_validate(config)
 
+    # Get general settings
+    pea_settings = PEASettings()
+
     # Agent factory lookup
     agent_factory: type[AgentFactory] | None = AgentFactoryMap.get(config.topic)
     if agent_factory is None:
@@ -82,7 +86,11 @@ def create_privacy_agent(
     detector_instance: BaseDetector
     match config.detector:
         case "gliner":
-            detector_instance = RemoteGlinerDetector(supported_entities=supported_entities, threshold=config.detector_threshold)
+            detector_instance = RemoteGlinerDetector(
+                base_url=pea_settings.gliner_api_url,
+                supported_entities=supported_entities,
+                threshold=config.detector_threshold,
+            )
         case "regex":
             detector_instance = RegexDetector()
         case _:
@@ -92,7 +100,7 @@ def create_privacy_agent(
     entity_store_instance: BaseEntityStorage
     match config.entity_store:
         case "valkey":
-            entity_store_instance = ValkeyEntityStorage(db=0)
+            entity_store_instance = ValkeyEntityStorage(host=pea_settings.valkey_host, port=pea_settings.valkey_port, db=1)
         case "encryption":
             if config.replacer != "encryption":
                 raise ValueError("Encryption entity store requires 'encryption' replacer")
@@ -119,7 +127,7 @@ def create_privacy_agent(
     conversation_store_instance: BaseConversationStorage
     match config.conversation_store:
         case "valkey":
-            conversation_store_instance = ValkeyConversationStorage(db=1)
+            conversation_store_instance = ValkeyConversationStorage(host=pea_settings.valkey_host, port=pea_settings.valkey_port, db=1)
         case _:
             raise ValueError(f"Unsupported conversation store: {config.conversation_store}")
 
@@ -136,7 +144,7 @@ def create_privacy_agent(
     match config.checkpointer:
         case "redis":
             checkpointer_instance = RedisSaver(
-                redis_url="redis://localhost:6380",
+                redis_url=pea_settings.redis_url,
                 ttl={
                     "default_ttl": 3600,
                     "refresh_on_read": True,
@@ -203,6 +211,9 @@ def create_agent(
     if isinstance(config, dict):
         config = PrivacyAgentConfig.model_validate(config)
 
+    # Get general settings
+    pea_settings = PEASettings()
+
     # Agent factory lookup
     agent_factory: type[AgentFactory] | None = AgentFactoryMap.get(config.topic)
     if agent_factory is None:
@@ -227,7 +238,7 @@ def create_agent(
     match config.checkpointer:
         case "redis":
             checkpointer_instance = RedisSaver(
-                redis_url="redis://localhost:6380",
+                redis_url=pea_settings.redis_url,
                 ttl={
                     "default_ttl": 3600,
                     "refresh_on_read": True,
