@@ -1,5 +1,5 @@
 # Use a full image with uv pre-installed as builder
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm AS builder
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm@sha256:d939988134ca1d678d2b1da32862e9ea206e9316fa77697f872b1c42fae61e7a AS builder
 
 # Install the project into `/app`
 WORKDIR /app
@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-dev --locked
 
 # Use slim image as runner
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS runner
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim@sha256:efe2350aa848bc60720f136d94f47480095d8231b17547e4369f6bc97df59701 AS runner
 
 # Metadata for the image
 ARG IMAGE_CREATED="unknown"
