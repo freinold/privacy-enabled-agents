@@ -1,4 +1,4 @@
-name: privacy-enabled-agents
+name: privacy-enabled-agents-eval
 
 services:
   valkey:
