@@ -40,7 +40,7 @@ services:
     environment: []
 
   privacy-enabled-agents:
-    image: ghcr.io/freinold/privacy-enabled-agents:latest
+    image: ghcr.io/freinold/privacy-enabled-agents:latest@sha256:045c119ae16b2bf3d389a1cf8db5b572a32b29670adbc397989415b27240f31c
     ports:
       - "8080:8080"
     stdin_open: true
