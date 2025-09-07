@@ -6,13 +6,14 @@ load_dotenv()
 from privacy_enabled_agents import PEASettings
 
 
-def run_frontend() -> None:
+def run_frontend(server_name: str) -> None:
     from gradio.blocks import Blocks
 
     from privacy_enabled_agents.frontend.gradio import create_gradio_interface
 
     demo: Blocks = create_gradio_interface()
-    demo.launch(server_name="localhost", server_port=8080)
+
+    demo.launch(server_name=server_name, server_port=8080)
 
 
 def main() -> None:
@@ -23,7 +24,8 @@ def main() -> None:
 
         run_evaluation(settings.evaluation)
     else:
-        run_frontend()
+        server_name: str = "0.0.0.0" if settings.public_frontend else "localhost"
+        run_frontend(server_name)
 
 
 if __name__ == "__main__":
