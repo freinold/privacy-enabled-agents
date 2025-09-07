@@ -59,27 +59,22 @@ class PEASettings(BaseSettings):
     )
     redis_url: str = Field(
         default="redis://localhost:6380",
-        validation_alias="redis-url",
         description="URL of the Redis server.",
     )
     valkey_host: str = Field(
         default="localhost",
-        validation_alias="valkey-host",
         description="Host of the Valkey server.",
     )
     valkey_port: int = Field(
         default=6379,
-        validation_alias="valkey-port",
         description="Port of the Valkey server.",
     )
     gliner_api_url: str = Field(
         default="http://localhost:8081",
-        validation_alias="gliner-api-url",
         description="URL of the Gliner API server.",
     )
     poll_link: str | None = Field(
         default=None,
-        validation_alias="poll-link",
         description="Link to the poll for feedback.",
     )
 
