@@ -77,6 +77,10 @@ class PEASettings(BaseSettings):
         default=None,
         description="Link to the poll for feedback.",
     )
+    public_frontend: bool = Field(
+        default=False,
+        description="Whether to make the Gradio frontend publicly accessible.",
+    )
 
     @model_validator(mode="after")
     def validate_eval_config(self) -> Self:
