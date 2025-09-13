@@ -3,7 +3,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from logging import Logger, getLogger
+
 from privacy_enabled_agents import PEASettings
+
+logger: Logger = getLogger(__name__)
 
 
 def run_frontend(server_name: str) -> None:
@@ -18,6 +22,8 @@ def run_frontend(server_name: str) -> None:
 
 def main() -> None:
     settings: PEASettings = PEASettings()
+
+    logger.info(f"Starting Privacy-Enabled Agents with settings: {settings.model_dump_json(indent=2)}")
 
     if settings.evaluation is not None:
         from privacy_enabled_agents.eval.runner import run_evaluation
