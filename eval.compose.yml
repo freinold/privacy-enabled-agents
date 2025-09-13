@@ -28,16 +28,21 @@ services:
       - "com.privacy-enabled-agents.description=Redis checkpointer backend"
 
   gliner-api:
-    image: ghcr.io/freinold/gliner-api:latest@sha256:24d5a2254ccf35f58a93252e986f79b3dabb9631b31f540b0810df1a6e27dcd0
+    image: ghcr.io/freinold/gliner-api:latest
     ports:
       - "8081:8080" # API and Gradio frontend
       - "9091:9090" # Metrics endpoint
     stdin_open: true
     tty: true
-    volumes:
-      - "${HOME}/.cache/huggingface:/app/huggingface:rw"
-      - "./gliner-api-configs/quantized_no-entities.yaml:/app/config.yaml:ro"
-    environment: []
+    # volumes:
+    #   - "${HOME}/.cache/huggingface:/app/huggingface:rw"
+    #   - "./gliner-api-configs/quantized_no-entities.yaml:/app/config.yaml:ro"
+    environment:
+      - GLINER_API_MODEL_ID=knowledgator/gliner-x-large
+      - GLINER_API_ONNX_ENABLED=True
+      - GLINER_API_ONNX_MODEL_PATH=onnx/model_quantized.onnx
+      - GLINER_API_DEFAULT_THRESHOLD=0.7
+      - GLINER_API_DEFAULT_ENTITIES=[]
 
 volumes:
   valkey-data:
