@@ -28,7 +28,7 @@ services:
       - "com.privacy-enabled-agents.description=Redis checkpointer backend"
 
   gliner-api:
-    image: ghcr.io/freinold/gliner-api:latest@sha256:24d5a2254ccf35f58a93252e986f79b3dabb9631b31f540b0810df1a6e27dcd0
+    image: ghcr.io/freinold/gliner-api:latest@sha256:dc00a437c096adfe8e679a5f5c658febb9f673f063f63957542b1c27a8e1d5c9
     ports:
       - "8081:8080" # API and Gradio frontend
       - "9091:9090" # Metrics endpoint
