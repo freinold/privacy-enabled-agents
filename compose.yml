@@ -65,7 +65,9 @@ services:
   #     - pea-network
 
   privacy-enabled-agents:
-    image: localhost/pea:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     stdin_open: true
@@ -77,6 +79,7 @@ services:
       - PEA_REDIS_URL=redis://redis.pea:6379
       - PEA_VALKEY_HOST=valkey.pea
       - PEA_VALKEY_PORT=6379
+      - PEA_PUBLIC_FRONTEND=true
     depends_on:
       # gliner-wait:
       #   condition: service_completed_successfully
