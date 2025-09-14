@@ -8,7 +8,7 @@ from privacy_enabled_agents.frontend.helpers import create_chat_function
 from privacy_enabled_agents.runtime import create_privacy_agent
 
 # Create logger for this module
-logger: Logger = getLogger(__name__)
+logger: Logger = getLogger()
 
 pea_settings = PEASettings()
 
@@ -167,8 +167,12 @@ def create_gradio_interface() -> gr.Blocks:
             gr.HTML(value=poll_banner)
             gr.Button("An Umfrage teilnehmen 📝", link=pea_settings.poll_link)
 
+        logger.info("Creating basic agent")
+
         basic_agent, basic_chat_model = create_privacy_agent({"topic": "basic"})
         basic_chat_fn = create_chat_function("basic", basic_agent, basic_chat_model)
+
+        logger.info("Creating websearch agent")
 
         websearch_agent, websearch_chat_model = create_privacy_agent(
             {
@@ -178,6 +182,8 @@ def create_gradio_interface() -> gr.Blocks:
             }
         )
         websearch_chat_fn = create_chat_function("websearch", websearch_agent, websearch_chat_model)
+
+        logger.info("Both agents created successfully")
 
         browser_state = gr.BrowserState(storage_key="privacy_agent_session")
 

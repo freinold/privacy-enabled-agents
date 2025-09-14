@@ -7,7 +7,7 @@ from logging import Logger, getLogger
 
 from privacy_enabled_agents import PEASettings
 
-logger: Logger = getLogger(__name__)
+logger: Logger = getLogger()
 
 
 def run_frontend(server_name: str) -> None:
@@ -15,7 +15,11 @@ def run_frontend(server_name: str) -> None:
 
     from privacy_enabled_agents.frontend.gradio import create_gradio_interface
 
+    logger.info("Creating Gradio interface")
+
     demo: Blocks = create_gradio_interface()
+
+    logger.info(f"Launching Gradio interface on {server_name}:8080")
 
     demo.launch(server_name=server_name, server_port=8080)
 
