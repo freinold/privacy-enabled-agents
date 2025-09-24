@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Literal, Self
 
 from langchain_core.messages import BaseMessage
 from langgraph.prebuilt.chat_agent_executor import AgentStatePydantic
@@ -80,6 +80,10 @@ class PEASettings(BaseSettings):
     public_frontend: bool = Field(
         default=False,
         description="Whether to make the Gradio frontend publicly accessible.",
+    )
+    search_provider: Literal["ddgs", "tavily"] = Field(
+        default="ddgs",
+        description="Search provider to use.",
     )
 
     @model_validator(mode="after")
