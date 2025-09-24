@@ -5,7 +5,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 
-from privacy_enabled_agents import PrivacyEnabledAgentState
+from privacy_enabled_agents import PEASettings, PrivacyEnabledAgentState
 from privacy_enabled_agents.base import PII_PRELUDE_PROMPT
 from privacy_enabled_agents.topics import AgentFactory
 
@@ -50,7 +50,17 @@ class WebSearchAgentFactory(AgentFactory):
         prompt: str | None = None,
         pii_guarding_enabled: bool = True,
     ) -> CompiledStateGraph:
-        tools: list[BaseTool] = [SearchWebTool(), GetCurrentDateTool()]
+        pea_settings = PEASettings()
+
+        tools: list[BaseTool] = [GetCurrentDateTool()]
+
+        match pea_settings.search_provider:
+            case "ddgs":
+                tools.append(SearchWebTool())
+            case "tavily":
+                from langchain_tavily import TavilySearch
+
+                tools.append(TavilySearch(max_results=5, topic="general"))
 
         if prompt is None:
             prompt = WEBSEARCH_AGENT_PROMPT
