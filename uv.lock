@@ -719,7 +719,7 @@ wheels = [
 
 [[package]]
 name = "gradio"
-version = "5.46.1"
+version = "5.47.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -752,14 +752,14 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ee/b8/06d55e07b22921558b9a3fba6c05ddad16ab221a3f18dfb9511c152fb4b0/gradio-5.46.1.tar.gz", hash = "sha256:a9e6662783251ed91b4955738207d442cbf107f8a0c2f90da36bffa08eae2e6c", size = 72265109, upload-time = "2025-09-19T18:52:58.584Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/8b/470dca9bd51a53543010b6a5528507230a360e2a0f48c54dfc5b005b7cc1/gradio-5.47.0.tar.gz", hash = "sha256:b2acc27cd64cce82d4553e9be2a36361fc232744494f589585a004484b953d37", size = 72275871, upload-time = "2025-09-23T17:40:02.598Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/a5/08a02a12331517acd02bfd9e44a940dd141197e2dc527f7a4cfc791268de/gradio-5.46.1-py3-none-any.whl", hash = "sha256:485b0839bbe8b4a0b4cb1869fb8dd8178e62215fd3ce5234d03374759e1f1a72", size = 60351341, upload-time = "2025-09-19T18:52:53.246Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/48/72714fd4310e033c5c675c5c487f44f66dfae8c4a54841aadfce6b19a106/gradio-5.47.0-py3-none-any.whl", hash = "sha256:4132717feae4c0e924dbb07efbbf06206a1a28918e800ba5f0e46fc1f1e88395", size = 60362315, upload-time = "2025-09-23T17:39:57.023Z" },
 ]
 
 [[package]]
 name = "gradio-client"
-version = "1.13.1"
+version = "1.13.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fsspec" },
@@ -769,9 +769,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f7/92/b42d814e493abadf4efb71c6b67bcde71c2a1b7056f1b8653cb71d3a7667/gradio_client-1.13.1.tar.gz", hash = "sha256:3766404027ec3cd830b25576031de72b6d5b383849d396996749ec937f5eada3", size = 323120, upload-time = "2025-09-19T18:53:09.952Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/91/f01e62ac58e8e415ffb3bff0f2e91b72ef940592aad826f9c37a1804d98c/gradio_client-1.13.2.tar.gz", hash = "sha256:f97e1c8e9937a502b8bdd105707edff4b3db47989a86a386b3d3846bc8c559a8", size = 323185, upload-time = "2025-09-23T17:40:15.497Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/02/dd4ecbcf654abc4b969f84def5735b7570224e9590912523b9f3eaf0d741/gradio_client-1.13.1-py3-none-any.whl", hash = "sha256:7797c71798d9e2210eb5663ef69e21cad123ecd44ac4de93488e61eb254324a3", size = 325195, upload-time = "2025-09-19T18:53:08.478Z" },
+    { url = "https://files.pythonhosted.org/packages/34/eb/0b2efa1a9c73bbd33de8d625b21ce6acd54378ec78c067a2fac99ad36055/gradio_client-1.13.2-py3-none-any.whl", hash = "sha256:4fe7dfef16849304dbe007aeaca694b36f16159eb6891fea139c99fce9a911f4", size = 325278, upload-time = "2025-09-23T17:40:13.574Z" },
 ]
 
 [[package]]
@@ -1485,7 +1485,7 @@ wheels = [
 
 [[package]]
 name = "langfuse"
-version = "3.5.0"
+version = "3.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -1498,9 +1498,9 @@ dependencies = [
     { name = "requests" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0e/5d/edcaa7d3445588b13c28eeb1aeadbfd8c4483c1f241f57e2975f46e29b15/langfuse-3.5.0.tar.gz", hash = "sha256:e68b8e960494f360d57b2feb8b11e01a3e55a0722f39ba8bf54ed4a069a386d5", size = 187504, upload-time = "2025-09-18T16:56:57.652Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/7e/1d63ebcd38d64d05588bf48d52882871ba3b4f851bb8c3ff52c40285f5b4/langfuse-3.5.1.tar.gz", hash = "sha256:996ba858df3220f447da9dc90637721725e837de53c47b5276fa1e755e65e5b3", size = 187563, upload-time = "2025-09-25T11:35:16.369Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4f/58/108730232d55d321a576981aa6c8ee53d57b782a5002ae7bf7ef1b5b45b3/langfuse-3.5.0-py3-none-any.whl", hash = "sha256:946b02f1f4cbe3ace88860832e73bb8e9548575dcd27b8cbdb30b7b2fdf62cf8", size = 348539, upload-time = "2025-09-18T16:56:55.639Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/6d/88d38794d9c5fb92c3236855ba4286ca1546c72a8b3a3a9d1bdf63712a0b/langfuse-3.5.1-py3-none-any.whl", hash = "sha256:10f9224c21babe9015b320058bcade6b4279d63da5182de08a76caf18cb8d552", size = 348549, upload-time = "2025-09-25T11:35:14.238Z" },
 ]
 
 [[package]]
@@ -2261,12 +2261,12 @@ requires-dist = [
     { name = "faker", specifier = "==37.8.0" },
     { name = "fastapi", extras = ["standard"], specifier = "==0.117.1" },
     { name = "geopy", specifier = "==2.4.1" },
-    { name = "gradio", specifier = "==5.46.1" },
+    { name = "gradio", specifier = "==5.47.0" },
     { name = "langchain", specifier = "==0.3.27" },
     { name = "langchain-mistralai", specifier = "==0.2.12" },
     { name = "langchain-openai", specifier = "==0.3.33" },
     { name = "langchain-tavily", specifier = "==0.2.11" },
-    { name = "langfuse", specifier = "==3.5.0" },
+    { name = "langfuse", specifier = "==3.5.1" },
     { name = "langgraph", specifier = "==0.6.7" },
     { name = "langgraph-checkpoint-redis", specifier = "==0.1.1" },
     { name = "langgraph-cli", specifier = "==0.4.2" },
@@ -2275,10 +2275,10 @@ requires-dist = [
     { name = "phonenumbers", specifier = "==9.0.14" },
     { name = "pydantic", specifier = "==2.11.9" },
     { name = "pydantic-extra-types", specifier = "==2.10.5" },
-    { name = "pydantic-settings", specifier = "==2.10.1" },
+    { name = "pydantic-settings", specifier = "==2.11.0" },
     { name = "python-dotenv", specifier = "==1.1.1" },
     { name = "pyyaml", specifier = "==6.0.2" },
-    { name = "schwifty", specifier = "==2025.7.0" },
+    { name = "schwifty", specifier = "==2025.9.0" },
     { name = "stamina", specifier = "==25.1.0" },
     { name = "truststore", specifier = "==0.10.4" },
     { name = "valkey", specifier = "==6.1.1" },
@@ -2483,16 +2483,16 @@ wheels = [
 
 [[package]]
 name = "pydantic-settings"
-version = "2.10.1"
+version = "2.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/68/85/1ea668bbab3c50071ca613c6ab30047fb36ab0da1b92fa8f17bbc38fd36c/pydantic_settings-2.10.1.tar.gz", hash = "sha256:06f0062169818d0f5524420a360d632d5857b83cffd4d42fe29597807a1614ee", size = 172583, upload-time = "2025-06-24T13:26:46.841Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/20/c5/dbbc27b814c71676593d1c3f718e6cd7d4f00652cefa24b75f7aa3efb25e/pydantic_settings-2.11.0.tar.gz", hash = "sha256:d0e87a1c7d33593beb7194adb8470fc426e95ba02af83a0f23474a04c9a08180", size = 188394, upload-time = "2025-09-24T14:19:11.764Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/f0/427018098906416f580e3cf1366d3b1abfb408a0652e9f31600c24a1903c/pydantic_settings-2.10.1-py3-none-any.whl", hash = "sha256:a60952460b99cf661dc25c29c0ef171721f98bfcb52ef8d9ea4c943d7c8cc796", size = 45235, upload-time = "2025-06-24T13:26:45.485Z" },
+    { url = "https://files.pythonhosted.org/packages/83/d6/887a1ff844e64aa823fb4905978d882a633cfe295c32eacad582b78a7d8b/pydantic_settings-2.11.0-py3-none-any.whl", hash = "sha256:fe2cea3413b9530d10f3a5875adffb17ada5c1e1bab0b2885546d7310415207c", size = 48608, upload-time = "2025-09-24T14:19:10.015Z" },
 ]
 
 [[package]]
@@ -2934,15 +2934,15 @@ wheels = [
 
 [[package]]
 name = "schwifty"
-version = "2025.7.0"
+version = "2025.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pycountry" },
     { name = "rstr" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6c/af/b995371d48a10fe3ee0267e1dd1e47abd8ee36bca8a7e4407c3b9aa63fa7/schwifty-2025.7.0.tar.gz", hash = "sha256:a98af4f00056ba5fa6f25b7eb1749c50c481c1813b6500c88433e34ef45c19f9", size = 747222, upload-time = "2025-07-28T11:07:43.849Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/60/4d/eaa581ad24299bd5f3b218ce2b920b816454e83729ce6f18a8817435a3fd/schwifty-2025.9.0.tar.gz", hash = "sha256:4283b8a4c02daec81a275c9460773ea2d1b778ca70ebb5bcb12ec1fc7dc0a099", size = 753680, upload-time = "2025-09-22T12:07:27.423Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/ed/eb9e3c0dc2ba71833fc419020cd582ab0bce1a2d51df503da60ab5eee5f5/schwifty-2025.7.0-py3-none-any.whl", hash = "sha256:b587e2d49badf06bf3d5033836a1d081d3c4bdaa02171163a9b325e5eea60a31", size = 358289, upload-time = "2025-07-28T11:07:45.314Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/e9/661154125873dc25be9a990ffadaa6290e1f4979f057901aba54c75cacf4/schwifty-2025.9.0-py3-none-any.whl", hash = "sha256:66fa5532df9aa641d131114ea41d938e4c670f4903b49db7092a0fa9d0347978", size = 359223, upload-time = "2025-09-22T12:07:25.587Z" },
 ]
 
 [[package]]
