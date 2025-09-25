@@ -38,7 +38,7 @@ websearch_scenario_description = """
 Ein hilfreicher und professioneller Web-Suchassistent.
 
 Der Agent findet Informationen effizient und präzise in Online-Quellen.
-Websuchen werden über Google durchgeführt, wobei die Privatsphäre der Nutzenden geschützt bleibt.
+Websuchen werden über Tavily durchgeführt, wobei die Privatsphäre der Nutzenden geschützt bleibt.
 Dies unterstützt z.B. bei der Recherche zu aktuellen Themen oder Persönlichkeiten.
 """
 
