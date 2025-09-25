@@ -52,6 +52,7 @@ class RemoteGlinerDetector(BaseDetector):
         self._client = Client(
             base_url=base_url,
             headers={"Authorization": f"Bearer {api_key}"} if api_key else {},
+            timeout=60,
         )
 
         if threshold is not None:
