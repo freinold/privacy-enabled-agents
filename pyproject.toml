@@ -20,7 +20,7 @@ dependencies = [
     "cryptography==46.0.2",
     "langgraph-checkpoint-redis==0.1.2",
     "stamina==25.1.0",
-    "langchain-mistralai==0.2.12",
+    "langchain-mistralai==1.0.1",
     "langgraph-cli==0.4.2",
     "schwifty==2025.9.0",
     "geopy==2.4.1",
