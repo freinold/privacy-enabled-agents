@@ -2,26 +2,58 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   description: "Renovate config for freinold/privacy-enabled-agents",
   extends: [
-    "config:best-practices", // best practices
-    "customManagers:githubActionsVersions", // manages _VERSION variables in GitHub Action workflows
-    "helpers:pinGitHubActionDigestsToSemver", // pin to digest with semver as comment
-    ":pinAllExceptPeerDependencies", // pin all dependencies except peer dependencies
-    "schedule:weekly", // only weekly updates
-    ":separateMultipleMajorReleases", // separate major updates of dependencies into separate PRs
-    ":timezone(Europe/Berlin)", // sets correct timezone for schedule based operations
-    "security:openssf-scorecard", // show OpenSSF badge on pull requests to evaluate security health metrics for dependencies
+    "config:best-practices",
+    "customManagers:githubActionsVersions",
+    "helpers:pinGitHubActionDigestsToSemver",
+    ":pinAllExceptPeerDependencies",
+    "schedule:weekly",
+    ":separateMultipleMajorReleases",
+    ":timezone(Europe/Berlin)",
+    "security:openssf-scorecard",
   ],
   labels: ["renovate", "lifecycle"],
-  lockFileMaintenance: {
-    enabled: true,
-  },
+  lockFileMaintenance: { enabled: true },
   reviewers: ["freinold"],
   packageRules: [
     {
+      description: "Python runtime minor updates grouped across .python-version and requires-python",
+      matchManagers: ["pyenv", "pep621"],
+      matchDepNames: ["python"],
+      matchUpdateTypes: ["minor"],
+      groupName: "Python runtime: minor",
+      groupSlug: "python-runtime-minor",
+    },
+    {
+      description: "Python runtime patch updates grouped across .python-version and requires-python",
+      matchManagers: ["pyenv", "pep621"],
+      matchDepNames: ["python"],
+      matchUpdateTypes: ["patch"],
+      groupName: "Python runtime: patch",
+      groupSlug: "python-runtime-patch",
+    },
+    {
+      description: "Python runtime major updates (separate PRs per major)",
+      matchManagers: ["pyenv", "pep621"],
+      matchDepNames: ["python"],
+      matchUpdateTypes: ["major"],
+      groupName: "Python runtime: major",
+      groupSlug: "python-runtime-major",
+    },
+    {
+      description: "Python deps: minor updates (PEP 621)",
       matchManagers: ["pep621"],
-      matchUpdateTypes: ["minor", "patch"],
-      groupName: "Python: non-major updates",
-      groupSlug: "python-non-major",
+      excludeDepNames: ["python"],
+      matchUpdateTypes: ["minor"],
+      groupName: "Python deps: minor",
+      groupSlug: "python-deps-minor",
+    },
+    {
+      description: "Python deps: patch updates (PEP 621)",
+      matchManagers: ["pep621"],
+      excludeDepNames: ["python"],
+      matchUpdateTypes: ["patch"],
+      groupName: "Python deps: patch",
+      groupSlug: "python-deps-patch",
     },
     {
       matchManagers: ["dockerfile"],
