@@ -1,69 +1,113 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  description: "Renovate config for freinold/privacy-enabled-agents",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  description: 'Renovate config for freinold/privacy-enabled-agents',
   extends: [
-    "config:best-practices",
-    "customManagers:githubActionsVersions",
-    "helpers:pinGitHubActionDigestsToSemver",
-    ":pinAllExceptPeerDependencies",
-    "schedule:weekly",
-    ":separateMultipleMajorReleases",
-    ":timezone(Europe/Berlin)",
-    "security:openssf-scorecard",
+    'config:best-practices',
+    'customManagers:githubActionsVersions',
+    'helpers:pinGitHubActionDigestsToSemver',
+    ':pinAllExceptPeerDependencies',
+    'schedule:weekly',
+    ':separateMultipleMajorReleases',
+    ':timezone(Europe/Berlin)',
+    'security:openssf-scorecard',
   ],
-  labels: ["renovate", "lifecycle"],
-  lockFileMaintenance: { enabled: true },
-  reviewers: ["freinold"],
+  labels: [
+    'renovate',
+    'lifecycle',
+  ],
+  lockFileMaintenance: {
+    enabled: true,
+  },
+  reviewers: [
+    'freinold',
+  ],
   packageRules: [
     {
-      description: "Python runtime minor updates grouped across .python-version and requires-python",
-      matchManagers: ["pyenv", "pep621"],
-      matchDepNames: ["python"],
-      matchUpdateTypes: ["minor"],
-      groupName: "Python runtime: minor",
-      groupSlug: "python-runtime-minor",
+      description: 'Python runtime minor updates grouped across .python-version and requires-python',
+      matchManagers: [
+        'pyenv',
+        'pep621',
+      ],
+      matchDepNames: [
+        'python',
+      ],
+      matchUpdateTypes: [
+        'minor',
+      ],
+      groupName: 'Python runtime: minor',
+      groupSlug: 'python-runtime-minor',
     },
     {
-      description: "Python runtime patch updates grouped across .python-version and requires-python",
-      matchManagers: ["pyenv", "pep621"],
-      matchDepNames: ["python"],
-      matchUpdateTypes: ["patch"],
-      groupName: "Python runtime: patch",
-      groupSlug: "python-runtime-patch",
+      description: 'Python runtime patch updates grouped across .python-version and requires-python',
+      matchManagers: [
+        'pyenv',
+        'pep621',
+      ],
+      matchDepNames: [
+        'python',
+      ],
+      matchUpdateTypes: [
+        'patch',
+      ],
+      groupName: 'Python runtime: patch',
+      groupSlug: 'python-runtime-patch',
     },
     {
-      description: "Python runtime major updates (separate PRs per major)",
-      matchManagers: ["pyenv", "pep621"],
-      matchDepNames: ["python"],
-      matchUpdateTypes: ["major"],
-      groupName: "Python runtime: major",
-      groupSlug: "python-runtime-major",
+      description: 'Python runtime major updates (separate PRs per major)',
+      matchManagers: [
+        'pyenv',
+        'pep621',
+      ],
+      matchDepNames: [
+        'python',
+      ],
+      matchUpdateTypes: [
+        'major',
+      ],
+      groupName: 'Python runtime: major',
+      groupSlug: 'python-runtime-major',
     },
     {
-      description: "Python deps: minor updates (PEP 621)",
-      matchManagers: ["pep621"],
-      excludeDepNames: ["python"],
-      matchUpdateTypes: ["minor"],
-      groupName: "Python deps: minor",
-      groupSlug: "python-deps-minor",
+      description: 'Python deps: minor updates (PEP 621)',
+      matchManagers: [
+        'pep621',
+      ],
+      matchUpdateTypes: [
+        'minor',
+      ],
+      groupName: 'Python deps: minor',
+      groupSlug: 'python-deps-minor',
+      matchDepNames: [
+        '!python',
+      ],
     },
     {
-      description: "Python deps: patch updates (PEP 621)",
-      matchManagers: ["pep621"],
-      excludeDepNames: ["python"],
-      matchUpdateTypes: ["patch"],
-      groupName: "Python deps: patch",
-      groupSlug: "python-deps-patch",
+      description: 'Python deps: patch updates (PEP 621)',
+      matchManagers: [
+        'pep621',
+      ],
+      matchUpdateTypes: [
+        'patch',
+      ],
+      groupName: 'Python deps: patch',
+      groupSlug: 'python-deps-patch',
+      matchDepNames: [
+        '!python',
+      ],
     },
     {
-      matchManagers: ["dockerfile"],
-      groupName: "Dockerfile base images",
-      groupSlug: "dockerfile-base-images",
+      matchManagers: [
+        'dockerfile',
+      ],
+      groupName: 'Dockerfile base images',
+      groupSlug: 'dockerfile-base-images',
     },
     {
-      matchManagers: ["github-actions"],
-      groupName: "GitHub Actions dependencies",
-      groupSlug: "github-actions",
+      matchManagers: [
+        'github-actions',
+      ],
+      groupName: 'GitHub Actions dependencies',
+      groupSlug: 'github-actions',
     },
   ],
 }
