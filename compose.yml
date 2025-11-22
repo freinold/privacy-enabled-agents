@@ -35,34 +35,34 @@ services:
         aliases:
           - redis.pea
 
-  # gliner-api:
-  #   image: ghcr.io/freinold/gliner-api:latest
-  #   ports:
-  #     - "8081:8080" # API and Gradio frontend
-  #     - "9091:9090" # Metrics endpoint
-  #   stdin_open: true
-  #   tty: true
-  #   volumes:
-  #     - "${HOME}/.cache/huggingface:/app/huggingface:rw"
-  #     # - "./gliner-api-configs/quantized_no-entities.yaml:/app/config.yaml:ro"
-  #   environment:
-  #     - GLINER_API_MODEL_ID=knowledgator/gliner-x-large
-  #     - GLINER_API_ONNX_ENABLED=True
-  #     - GLINER_API_ONNX_MODEL_PATH=onnx/model_quantized.onnx
-  #     - GLINER_API_DEFAULT_THRESHOLD=0.7
-  #     - GLINER_API_DEFAULT_ENTITIES=[]
-  #   networks:
-  #     pea-network:
-  #       aliases:
-  #         - gliner-api.pea
+  gliner-api:
+    image: ghcr.io/freinold/gliner-api:latest
+    ports:
+      - "8081:8080" # API and Gradio frontend
+      - "9091:9090" # Metrics endpoint
+    stdin_open: true
+    tty: true
+    volumes:
+      - "${HOME}/.cache/huggingface:/app/huggingface:rw"
+      # - "./gliner-api-configs/quantized_no-entities.yaml:/app/config.yaml:ro"
+    environment:
+      - GLINER_API_MODEL_ID=knowledgator/gliner-x-large
+      - GLINER_API_ONNX_ENABLED=True
+      - GLINER_API_ONNX_MODEL_PATH=onnx/model_quantized.onnx
+      - GLINER_API_DEFAULT_THRESHOLD=0.7
+      - GLINER_API_DEFAULT_ENTITIES=[]
+    networks:
+      pea-network:
+        aliases:
+          - gliner-api.pea
 
-  # gliner-wait:
-  #   image: alpine:latest
-  #   command: ["sleep", "60"]
-  #   depends_on:
-  #     - gliner-api
-  #   networks:
-  #     - pea-network
+  gliner-wait:
+    image: alpine:latest
+    command: ["sleep", "60"]
+    depends_on:
+      - gliner-api
+    networks:
+      - pea-network
 
   privacy-enabled-agents:
     build:
@@ -75,7 +75,7 @@ services:
     env_file:
       - .env
     environment:
-      - PEA_GLINER_API_URL=https://freinold-gliner-api.hf.space/
+      - PEA_GLINER_API_URL=http://gliner-api.pea:8080
       - PEA_REDIS_URL=redis://redis.pea:6379
       - PEA_VALKEY_HOST=valkey.pea
       - PEA_VALKEY_PORT=6379

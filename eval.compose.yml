@@ -34,14 +34,14 @@ services:
       - "9091:9090" # Metrics endpoint
     stdin_open: true
     tty: true
-    # volumes:
-    #   - "${HOME}/.cache/huggingface:/app/huggingface:rw"
-    #   - "./gliner-api-configs/quantized_no-entities.yaml:/app/config.yaml:ro"
+    volumes:
+      - "${HOME}/.cache/huggingface:/app/huggingface:rw"
+      - "./gliner-api-configs/gliner-pii_no-entities.yaml:/app/config.yaml:ro"
     environment:
-      - GLINER_API_MODEL_ID=knowledgator/gliner-x-large
+      - GLINER_API_MODEL_ID=knowledgator/gliner-pii-large-v1.0
       - GLINER_API_ONNX_ENABLED=True
-      - GLINER_API_ONNX_MODEL_PATH=onnx/model_quantized.onnx
-      - GLINER_API_DEFAULT_THRESHOLD=0.7
+      - GLINER_API_ONNX_MODEL_PATH=onnx/model_quint8.onnx
+      - GLINER_API_DEFAULT_THRESHOLD=0.3
       - GLINER_API_DEFAULT_ENTITIES=[]
 
 volumes:
