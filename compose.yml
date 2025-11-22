@@ -36,7 +36,7 @@ services:
           - redis.pea
 
   gliner-api:
-    image: ghcr.io/freinold/gliner-api:latest
+    image: ghcr.io/freinold/gliner-api:latest@sha256:dc00a437c096adfe8e679a5f5c658febb9f673f063f63957542b1c27a8e1d5c9
     ports:
       - "8081:8080" # API and Gradio frontend
       - "9091:9090" # Metrics endpoint
@@ -57,7 +57,7 @@ services:
           - gliner-api.pea
 
   gliner-wait:
-    image: alpine:latest
+    image: alpine:latest@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
     command: ["sleep", "60"]
     depends_on:
       - gliner-api
