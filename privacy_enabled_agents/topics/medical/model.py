@@ -2,7 +2,6 @@ from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, Field
-from pydantic_extra_types.coordinate import Coordinate
 
 from privacy_enabled_agents import PrivacyEnabledAgentState
 from privacy_enabled_agents.custom_types.german_medical_insurance_id import GermanMedicalInsuranceID
@@ -33,7 +32,7 @@ class MedicalFacility(BaseModel):
     """Model representing a medical facility."""
 
     name: str = Field(description="Name of the medical facility.")
-    location: Coordinate = Field(description="Geographic coordinates of the medical facility.")
+    location: tuple[float, float] = Field(description="Geographic coordinates of the medical facility.")
     type: Literal["hospital", "doctors office"] = Field(description="The type of the medical facility.")
     distance: float | None = Field(
         default=None,
@@ -50,8 +49,8 @@ class MedicalTransport(BaseModel):
         max_length=6,
         min_length=6,
     )
-    start_location: Coordinate = Field(description="The starting location for the medical transport.")
-    destination_location: Coordinate = Field(description="The destination location for the medical transport.")
+    start_location: tuple[float, float] = Field(description="The starting location for the medical transport.")
+    destination_location: tuple[float, float] = Field(description="The destination location for the medical transport.")
     transport_datetime: str = Field(description="The date and time when the medical transport should take place.")
     patient_name: str = Field(description="The name of the patient who will be transported.")
     patient_dob: date = Field(description="The date of birth of the patient who will be transported.")

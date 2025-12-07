@@ -14,7 +14,6 @@ from langgraph.runtime import get_runtime
 from langgraph.types import Command
 from phonenumbers import PhoneNumber
 from pydantic import BaseModel, Field
-from pydantic_extra_types.coordinate import Coordinate
 from pydantic_extra_types.phone_numbers import PhoneNumberValidator
 
 from privacy_enabled_agents.custom_types import GermanMedicalInsuranceID
@@ -52,21 +51,19 @@ class GetCoordinateFromAdressTool(BaseTool):
     return_direct: bool = False
     response_format: Literal["content", "content_and_artifact"] = "content"
 
-    def _run(self, address: str) -> Coordinate:
+    def _run(self, address: str) -> tuple[float, float]:
         geocoder: Nominatim = get_nominatim_geocoder()
         location: Location | None = geocoder.geocode(address)  # type: ignore
         if location:
-            return Coordinate(
-                latitude=location.latitude,
-                longitude=location.longitude,
-            )
+            return location.latitude, location.longitude
         raise ValueError("Could not find coordinates for address.")
 
 
 class CheckServiceAreaInput(BaseModel):
     """Input schema for the check_service_area tool."""
 
-    location: Coordinate = Field(description="The location which is to be checked if it is in the service area.")
+    latitude: float = Field(description="The latitude of the location which is to be checked if it is in the service area.")
+    longitude: float = Field(description="The longitude of the location which is to be checked if it is in the service area.")
 
 
 class CheckServiceAreaTool(BaseTool):
@@ -78,12 +75,12 @@ class CheckServiceAreaTool(BaseTool):
     return_direct: bool = False
     response_format: Literal["content", "content_and_artifact"] = "content"
 
-    def _run(self, location: Coordinate) -> bool:
+    def _run(self, latitude: float, longitude: float) -> bool:
         geocoder: Nominatim = get_nominatim_geocoder()
         context: MedicalContext = get_runtime(MedicalContext).context
 
         loc: Location | None = geocoder.reverse(
-            query=(location.latitude, location.longitude),
+            query=(latitude, longitude),
             exactly_one=True,
         )  # type: ignore
         if loc:
@@ -94,9 +91,8 @@ class CheckServiceAreaTool(BaseTool):
 class FindNearbyMedicalFacilitiesInput(BaseModel):
     """Input schema for the find_nearby_medical_facilities tool."""
 
-    location: Coordinate = Field(
-        description="The location as a pair of latitude and longitude coordinates to search for medical facilities."
-    )
+    latitude: float = Field(description="Latitude of the location to search for medical facilities.")
+    longitude: float = Field(description="Longitude of the location to search for medical facilities.")
 
     # BUG: These shouldn't be needed but are required for injection to work
     state: Annotated[MedicalState, InjectedState]
@@ -113,15 +109,16 @@ class FindNearbyMedicalFacilitiesTool(BaseTool):
 
     def _run(
         self,
-        location: Coordinate,
+        latitude: float,
+        longitude: float,
         state: Annotated[MedicalState, InjectedState],
     ) -> list[MedicalFacility]:
         facilities: list[MedicalFacility] = state.facilities
         nearby_facilities: list[MedicalFacility] = []
         for facility in facilities:
             facility_distance: float = distance(
-                (location.latitude, location.longitude),
-                (facility.location.latitude, facility.location.longitude),
+                (latitude, longitude),
+                (facility.location[0], facility.location[1]),
             ).km
             if facility_distance <= 10:
                 nearby_facilities.append(facility)
@@ -134,7 +131,8 @@ class FindNearbyMedicalFacilitiesTool(BaseTool):
 class BookMedicalTransportInput(BaseModel):
     """Input schema for the book_medical_transport tool."""
 
-    location: Coordinate = Field(description="The location of the medical transport as a pair of latitude and longitude coordinates.")
+    latitude: float = Field(description="Latitude of the patient's location for the medical transport.")
+    longitude: float = Field(description="Longitude of the patient's location for the medical transport.")
     facility: str = Field(
         description="The facility name where the medical transport should go to / from.",
     )
@@ -162,7 +160,8 @@ class BookMedicalTransportTool(BaseTool):
 
     def _run(
         self,
-        location: Coordinate,
+        latitude: float,
+        longitude: float,
         facility: str,
         transport_direction: Literal["to_facility", "from_facility"],
         transport_datetime: datetime,
@@ -183,12 +182,11 @@ class BookMedicalTransportTool(BaseTool):
             raise ValueError(f"Facility '{facility}' not found in the service area.")
 
         if transport_direction == "to_facility":
-            start_location: Coordinate = location
-            destination_location: Coordinate = fac.location
+            start_location: tuple[float, float] = (latitude, longitude)
+            destination_location: tuple[float, float] = fac.location
         else:
-            start_location: Coordinate = fac.location
-            destination_location: Coordinate = location
-
+            start_location: tuple[float, float] = fac.location
+            destination_location: tuple[float, float] = (latitude, longitude)
         # Create a new random transport PIN
         transport_pin: str = f"{randint(0, 999999):06d}"
         transport_id: str = f"TR{state.transport_id_counter:04d}"
