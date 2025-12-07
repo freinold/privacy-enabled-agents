@@ -162,3 +162,5 @@ cython_debug/
 # Valkey Data
 valkey-data/
 
+# Poll
+poll/
